@@ -1,5 +1,6 @@
 local/
- 
+
+backups/
 data/
 .hytale-downloader-credentials.json
  

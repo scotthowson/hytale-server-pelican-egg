@@ -1,0 +1,143 @@
+version: '3'
+
+vars:
+  IMAGE_NAME: '{{default "hytale-server:local" .IMAGE_NAME}}'
+  IMAGE_NAME_AMD64: '{{default "hytale-server:local-amd64" .IMAGE_NAME_AMD64}}'
+  DEV_CONTAINER_NAME: '{{default "hytale-server-dev" .DEV_CONTAINER_NAME}}'
+  DEV_DATA_DIR: '{{default "./data" .DEV_DATA_DIR}}'
+  DEV_BACKUP_DIR: '{{default "./backups" .DEV_BACKUP_DIR}}'
+  DEV_BACKUP_FREQUENCY_MINUTES: '{{default "60" .DEV_BACKUP_FREQUENCY_MINUTES}}'
+  DEV_BACKUP_MAX_COUNT: '{{default "24" .DEV_BACKUP_MAX_COUNT}}'
+  DEV_PORT: '{{default "5520" .DEV_PORT}}'
+
+tasks:
+  build:
+    desc: Build the Docker image locally
+    cmds:
+      - docker build -t {{.IMAGE_NAME}} .
+
+  build:amd64:
+    desc: Build the Docker image locally for linux/amd64 (Apple Silicon support)
+    cmds:
+      - docker buildx build --platform linux/amd64 -t {{.IMAGE_NAME_AMD64}} --load .
+
+  test:
+    desc: Run container-level validation tests against IMAGE_NAME
+    cmds:
+      - chmod +x ci/test-image.sh
+      - IMAGE_NAME={{.IMAGE_NAME}} ./ci/test-image.sh
+
+  verify:
+    desc: Build + run validation tests
+    cmds:
+      - task: build
+      - task: test
+
+  dev:up:
+    desc: Start a local server container (manual provisioning in ./data)
+    cmds:
+      - task: build
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --name {{.DEV_CONTAINER_NAME}} -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME}}
+
+  dev:up:amd64:
+    desc: Start a local server container as linux/amd64 (manual provisioning in ./data)
+    cmds:
+      - task: build:amd64
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}} -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME_AMD64}}
+
+  dev:up:backup:
+    desc: Start a local server container with backups enabled (backups are written into /data unless HYTALE_BACKUP_DIR is overridden)
+    cmds:
+      - task: build
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --name {{.DEV_CONTAINER_NAME}} -e HYTALE_ENABLE_BACKUP=true -e HYTALE_BACKUP_DIR=/data/backups -e HYTALE_BACKUP_FREQUENCY_MINUTES={{.DEV_BACKUP_FREQUENCY_MINUTES}} -e HYTALE_BACKUP_MAX_COUNT={{.DEV_BACKUP_MAX_COUNT}} -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME}}
+
+  dev:up:backup:amd64:
+    desc: Start a local server container as linux/amd64 with backups enabled
+    cmds:
+      - task: build:amd64
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}} -e HYTALE_ENABLE_BACKUP=true -e HYTALE_BACKUP_DIR=/data/backups -e HYTALE_BACKUP_FREQUENCY_MINUTES={{.DEV_BACKUP_FREQUENCY_MINUTES}} -e HYTALE_BACKUP_MAX_COUNT={{.DEV_BACKUP_MAX_COUNT}} -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME_AMD64}}
+
+  dev:up:backup:separate:
+    desc: Start a local server container with backups enabled, using a separate host directory mounted to /backups
+    cmds:
+      - task: build
+      - mkdir -p {{.DEV_BACKUP_DIR}}
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --name {{.DEV_CONTAINER_NAME}} -e HYTALE_ENABLE_BACKUP=true -e HYTALE_BACKUP_DIR=/backups -e HYTALE_BACKUP_FREQUENCY_MINUTES={{.DEV_BACKUP_FREQUENCY_MINUTES}} -e HYTALE_BACKUP_MAX_COUNT={{.DEV_BACKUP_MAX_COUNT}} -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data -v {{.DEV_BACKUP_DIR}}:/backups {{.IMAGE_NAME}}
+
+  dev:up:backup:separate:amd64:
+    desc: Start a local server container as linux/amd64 with backups enabled, using a separate host directory mounted to /backups
+    cmds:
+      - task: build:amd64
+      - mkdir -p {{.DEV_BACKUP_DIR}}
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}} -e HYTALE_ENABLE_BACKUP=true -e HYTALE_BACKUP_DIR=/backups -e HYTALE_BACKUP_FREQUENCY_MINUTES={{.DEV_BACKUP_FREQUENCY_MINUTES}} -e HYTALE_BACKUP_MAX_COUNT={{.DEV_BACKUP_MAX_COUNT}} -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data -v {{.DEV_BACKUP_DIR}}:/backups {{.IMAGE_NAME_AMD64}}
+
+  dev:up:auto:
+    desc: Start a local server container with HYTALE_AUTO_DOWNLOAD=true
+    cmds:
+      - task: build
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --name {{.DEV_CONTAINER_NAME}} -e HYTALE_AUTO_DOWNLOAD=true -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME}}
+
+  dev:up:auto:amd64:
+    desc: Start a local server container as linux/amd64 with HYTALE_AUTO_DOWNLOAD=true
+    cmds:
+      - task: build:amd64
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}} -e HYTALE_AUTO_DOWNLOAD=true -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME_AMD64}}
+
+  dev:aot:generate:
+    desc: Generate an AOT cache at ./data/server/HytaleServer.aot (requires server files + Assets.zip in ./data)
+    cmds:
+      - task: build
+      - docker run --rm -it --name {{.DEV_CONTAINER_NAME}}-aot-generate -e ENABLE_AOT=generate -e JVM_EXTRA_ARGS=-Xlog:aot=trace -e JDK_AOT_VM_OPTIONS=-Xlog:aot=trace -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME}}
+
+  dev:aot:generate:amd64:
+    desc: Generate an AOT cache as linux/amd64 (Apple Silicon support; requires server files + Assets.zip in ./data)
+    cmds:
+      - task: build:amd64
+      - docker run --rm -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}}-aot-generate -e ENABLE_AOT=generate -e JVM_EXTRA_ARGS=-Xlog:aot=trace -e JDK_AOT_VM_OPTIONS=-Xlog:aot=trace -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME_AMD64}}
+
+  dev:up:aot:
+    desc: Start a local server container with AOT enabled and verbose AOT logging (requires generated AOT cache)
+    cmds:
+      - task: build
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --name {{.DEV_CONTAINER_NAME}} -e ENABLE_AOT=true -e JVM_EXTRA_ARGS=-Xlog:aot=trace -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME}}
+
+  dev:up:aot:amd64:
+    desc: Start a local server container as linux/amd64 with AOT enabled and verbose AOT logging (requires generated AOT cache)
+    cmds:
+      - task: build:amd64
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - docker run -d -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}} -e ENABLE_AOT=true -e JVM_EXTRA_ARGS=-Xlog:aot=trace -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME_AMD64}}
+
+  dev:down:
+    desc: Stop and remove the local server container
+    cmds:
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+
+  dev:logs:
+    desc: Follow logs from the local server container
+    cmds:
+      - docker logs -f {{.DEV_CONTAINER_NAME}}
+
+  dev:attach:
+    desc: Attach to the server console of the running local container
+    cmds:
+      - docker attach {{.DEV_CONTAINER_NAME}}
+
+  dev:ps:
+    desc: Show status of the local server container
+    cmds:
+      - docker ps -a --filter name={{.DEV_CONTAINER_NAME}}
+
+  dev:exec:
+    desc: Open a shell in the running local server container
+    cmds:
+      - docker exec -it {{.DEV_CONTAINER_NAME}} sh

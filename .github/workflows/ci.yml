@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  docker-image-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build image
+        run: |
+          docker build -t hytale-server:test .
+
+      - name: Run image validation tests
+        run: |
+          chmod +x ci/test-image.sh
+          IMAGE_NAME=hytale-server:test ./ci/test-image.sh

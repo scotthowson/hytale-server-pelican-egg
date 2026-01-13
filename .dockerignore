@@ -1,0 +1,15 @@
+ .git
+ .github
+ local
+ backups
+ data
+ docs
+ 
+ .DS_Store
+ *.log
+ 
+ .hytale-downloader-credentials.json
+ hytale-downloader/
+
+.windsurf/
+.claude/
