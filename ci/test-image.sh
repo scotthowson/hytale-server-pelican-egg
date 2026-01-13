@@ -19,6 +19,7 @@ pass "default user is non-root (uid=${uid})"
 
 # Test 2: fails fast with clear errors when files are missing
 workdir="$(mktemp -d)"
+chmod 0777 "${workdir}"
 set +e
 out="$(docker run --rm -v "${workdir}:/data" "${IMAGE_NAME}" 2>&1)"
 status=$?
@@ -56,6 +57,7 @@ pass "backup can be enabled via HYTALE_ENABLE_BACKUP"
 
 # Test 4: auto-download must refuse non-official downloader URLs (no network)
 workdir2="$(mktemp -d)"
+chmod 0777 "${workdir2}"
 set +e
 out="$(docker run --rm \
   -e HYTALE_AUTO_DOWNLOAD=true \
@@ -77,6 +79,7 @@ rm -rf "${workdir2}"
 
 # Test 4b: auto-update is enabled by default when files are present
 workdir2b="$(mktemp -d)"
+chmod 0777 "${workdir2b}"
 mkdir -p "${workdir2b}/server"
 : > "${workdir2b}/Assets.zip"
 : > "${workdir2b}/server/HytaleServer.jar"
@@ -96,6 +99,7 @@ rm -rf "${workdir2b}"
 
 # Test 4c: auto-update can be disabled via HYTALE_AUTO_UPDATE=false
 workdir2c="$(mktemp -d)"
+chmod 0777 "${workdir2c}"
 mkdir -p "${workdir2c}/server"
 : > "${workdir2c}/Assets.zip"
 : > "${workdir2c}/server/HytaleServer.jar"
@@ -120,6 +124,7 @@ rm -rf "${workdir2c}"
 
 # Test 5: auto-download must fail fast on arm64 without attempting network calls
 workdir3="$(mktemp -d)"
+chmod 0777 "${workdir3}"
 override="$(mktemp -d)"
 cat >"${override}/uname" <<'EOF'
 #!/bin/sh
@@ -147,6 +152,7 @@ rm -rf "${workdir3}" "${override}"
 
 # Test 6: stale auto-download lock must be removed automatically
 workdir4="$(mktemp -d)"
+chmod 0777 "${workdir4}"
 mkdir -p "${workdir4}/.hytale-download-lock"
 now_epoch="$(date +%s)"
 stale_epoch=$((now_epoch - 600))
