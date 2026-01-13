@@ -60,9 +60,42 @@ HYTALE_AUTO_UPDATE="${HYTALE_AUTO_UPDATE:-true}"
 
 ENABLE_AOT="${ENABLE_AOT:-auto}"
 
+HYTALE_MACHINE_ID="${HYTALE_MACHINE_ID:-}"
+
 user_args="$*"
 
 mkdir -p "${SERVER_DIR}"
+
+setup_machine_id() {
+  MACHINE_ID_FILE="/etc/machine-id"
+  MACHINE_ID_PERSISTENT="${DATA_DIR}/.machine-id"
+
+  if [ -n "${HYTALE_MACHINE_ID}" ]; then
+    machine_id="${HYTALE_MACHINE_ID}"
+  elif [ -f "${MACHINE_ID_PERSISTENT}" ]; then
+    machine_id="$(cat "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true)"
+  else
+    machine_id=""
+  fi
+
+  if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
+    if command -v uuidgen >/dev/null 2>&1; then
+      machine_id="$(uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]')"
+    else
+      machine_id="$(cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-' | tr '[:upper:]' '[:lower:]' || true)"
+    fi
+  fi
+
+  if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
+    log "ERROR: Failed to generate a valid machine-id"
+    exit 1
+  fi
+
+  printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE}" 2>/dev/null || true
+  printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
+}
+
+setup_machine_id
 
 log "Thank you for using the Hytale Server Docker Image by Hybrowse!"
 log "- Add your server to our server list: https://hybrowse.gg"

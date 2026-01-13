@@ -55,21 +55,27 @@ On subsequent runs, this step is skipped (credentials are stored on the `/data` 
    docker compose attach hytale
    ```
 
-2. Run:
+2. Enable encrypted persistence (so you don't need to re-authenticate after every restart):
+
+   ```text
+   /auth persistence Encrypted
+   ```
+
+3. Run:
 
    ```text
    /auth login device
    ```
 
-3. Follow the URL + device code shown in the console.
+4. Follow the URL + device code shown in the console.
 
-4. If multiple profiles are shown, pick one:
+5. If multiple profiles are shown, pick one:
 
    ```text
    /auth select <number>
    ```
 
-5. Check status:
+6. Check status:
 
    ```text
    /auth status

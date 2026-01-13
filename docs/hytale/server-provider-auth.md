@@ -8,6 +8,8 @@ For hosting providers or server networks that want **automatic server authentica
 
 Without a provider entitlement, the official docs mention a default limit of **100 concurrent server sessions** per game license.
 
+**Note**: When valid `HYTALE_SERVER_SESSION_TOKEN` and `HYTALE_SERVER_IDENTITY_TOKEN` are provided, the server skips the `/auth login device` flow entirely and authenticates automatically at startup.
+
 ## Prerequisites
 
 The guide states that game server providers must contact Hytale Support and apply as a Game Server Provider.

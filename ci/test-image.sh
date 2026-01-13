@@ -184,5 +184,51 @@ if echo "${out}" | grep -q "${TOKEN_VALUE}"; then
 fi
 pass "token values are not logged"
 
+# Test 8: machine-id is generated and persisted
+workdir5="$(mktemp -d)"
+chmod 0777 "${workdir5}"
+mkdir -p "${workdir5}/server"
+: > "${workdir5}/Assets.zip"
+: > "${workdir5}/server/HytaleServer.jar"
+set +e
+out="$(docker run --rm -v "${workdir5}:/data" "${IMAGE_NAME}" 2>&1)"
+status=$?
+set -e
+[ ${status} -ne 0 ] || fail "expected java to fail with dummy jar"
+[ -f "${workdir5}/.machine-id" ] || fail "expected .machine-id to be created"
+machine_id="$(cat "${workdir5}/.machine-id")"
+[ "${#machine_id}" -eq 32 ] || fail "expected machine-id to be 32 characters, got ${#machine_id}"
+echo "${machine_id}" | grep -qE '^[0-9a-f]{32}$' || fail "expected machine-id to be lowercase hex"
+if echo "${out}" | grep -q "${machine_id}"; then
+  fail "machine-id value should not be logged"
+fi
+pass "machine-id is generated and persisted"
+
+# Test 8b: machine-id is stable across restarts
+set +e
+out2="$(docker run --rm -v "${workdir5}:/data" "${IMAGE_NAME}" 2>&1)"
+status=$?
+set -e
+[ ${status} -ne 0 ] || fail "expected java to fail with dummy jar"
+machine_id2="$(cat "${workdir5}/.machine-id")"
+[ "${machine_id}" = "${machine_id2}" ] || fail "expected machine-id to be stable, got ${machine_id} vs ${machine_id2}"
+pass "machine-id is stable across restarts"
+
+# Test 8c: HYTALE_MACHINE_ID can override machine-id
+CUSTOM_MACHINE_ID="0123456789abcdef0123456789abcdef"
+set +e
+out3="$(docker run --rm -e HYTALE_MACHINE_ID="${CUSTOM_MACHINE_ID}" -v "${workdir5}:/data" "${IMAGE_NAME}" 2>&1)"
+status=$?
+set -e
+[ ${status} -ne 0 ] || fail "expected java to fail with dummy jar"
+machine_id3="$(cat "${workdir5}/.machine-id")"
+[ "${machine_id3}" = "${CUSTOM_MACHINE_ID}" ] || fail "expected custom machine-id to be used, got ${machine_id3}"
+if echo "${out3}" | grep -q "${CUSTOM_MACHINE_ID}"; then
+  fail "custom machine-id value should not be logged"
+fi
+pass "HYTALE_MACHINE_ID can override machine-id"
+
+rm -rf "${workdir5}"
+
 rm -rf "${workdir}"
 pass "all tests"

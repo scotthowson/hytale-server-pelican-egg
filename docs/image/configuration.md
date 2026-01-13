@@ -37,8 +37,11 @@ On arm64 hosts (for example Apple Silicon), you can also run the container as `l
 
 ## Server authentication (required for player connections)
 
-In `HYTALE_AUTH_MODE=authenticated` mode, the server must be authenticated **after startup** before players can connect.
+In `HYTALE_AUTH_MODE=authenticated` mode, the server must be authenticated after startup before players can connect.
 This is separate from the downloader OAuth flow used for auto-download.
+
+To persist authentication across server restarts, run `/auth persistence Encrypted` before `/auth login device`.
+Without this, you will need to re-authenticate after every container restart.
 
 See:
 
@@ -52,6 +55,7 @@ Advanced (providers / fleets):
 
 | Variable | Default | Description |
 |---|---:|---|
+| `HYTALE_MACHINE_ID` | *(empty)* | 32-character hex string for the container's machine ID (hardware UUID workaround). Auto-generated and persisted if not set. |
 | `HYTALE_SERVER_JAR` | `/data/server/HytaleServer.jar` | Path to `HytaleServer.jar` inside the container. |
 | `HYTALE_ASSETS_PATH` | `/data/Assets.zip` | Path to `Assets.zip` inside the container. |
 | `HYTALE_AOT_PATH` | `/data/server/HytaleServer.aot` | Path to the AOT cache file. |
@@ -176,9 +180,25 @@ If you see Java warnings about restricted native access (e.g. Netty), you can se
 
 - `JVM_EXTRA_ARGS=--enable-native-access=ALL-UNNAMED`
 
-If you see a stacktrace about failing to read a hardware UUID during Sentry init, you can set:
+### Hardware UUID workaround
 
-- `HYTALE_DISABLE_SENTRY=true`
+The Hytale server reads `/etc/machine-id` to generate a stable hardware UUID.
+In Docker containers, this file is typically missing or read-only.
+This image automatically generates a stable machine ID and persists it in `/data/.machine-id`.
+
+The machine ID is used by the Hytale server to encrypt the `auth.enc` file (which stores authentication credentials from `/auth login device`).
+This image replicates the standard Linux behavior where `/etc/machine-id` is readable by all processes.
+
+You can override the auto-generated machine ID:
+
+```yaml
+services:
+  hytale:
+    environment:
+      HYTALE_MACHINE_ID: "0123456789abcdef0123456789abcdef"
+```
+
+The value must be exactly 32 lowercase hexadecimal characters (no dashes).
 
 ### Non-interactive auto-download (seed credentials)
 

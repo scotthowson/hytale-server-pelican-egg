@@ -44,7 +44,7 @@ docker compose up -d
 > **Two authentication steps required:**
 >
 > 1. **Downloader auth** (first run): follow the URL + device code in the logs to download server files
-> 2. **Server auth** (after startup): attach to the console (`docker compose attach hytale`), then run `/auth login device`
+> 2. **Server auth** (after startup): attach to the console (`docker compose attach hytale`), then run `/auth persistence Encrypted` followed by `/auth login device`
 
 Full guide: [`docs/image/quickstart.md`](docs/image/quickstart.md)
 
