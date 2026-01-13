@@ -1,15 +1,19 @@
 # Hytale Server Docker Image
  
-🐳 Production-ready Docker image for dedicated Hytale servers.
- 
-**Image (Docker Hub)**: `hybrowse/hytale-server`
-**Mirror (GHCR)**: `ghcr.io/hybrowse/hytale-server`
+**🐳 Production-ready Docker image for dedicated Hytale servers.**
+
+Auto-download with smart update detection, easy configuration via environment variables, built-in backup support, and clear error messages for quick troubleshooting.
 
 Brought to you by [Hybrowse](https://hybrowse.gg) and the developer of [setupmc.com](https://setupmc.com).
 
- ## Community
+## Image
 
- Join the **Hybrowse Discord Server** to get help and stay up to date: https://hybrowse.gg/discord
+- **Image (Docker Hub)**: [hybrowse/hytale-server](https://hub.docker.com/r/hybrowse/hytale-server)
+- **Mirror (GHCR)**: [ghcr.io/hybrowse/hytale-server](https://ghcr.io/hybrowse/hytale-server)
+
+## Community
+
+Join the **Hybrowse Discord Server** to get help and stay up to date: https://hybrowse.gg/discord
 
 ## Status
 
