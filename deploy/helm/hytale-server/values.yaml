@@ -60,6 +60,24 @@ tmp:
   emptyDir:
     medium: Memory
 
+probes:
+  enabled: false
+  startup:
+    enabled: true
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 60
+  readiness:
+    enabled: true
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  liveness:
+    enabled: false
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
 terminationGracePeriodSeconds: 120
 
 resources: {}
