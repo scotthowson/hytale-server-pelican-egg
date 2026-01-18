@@ -139,6 +139,38 @@ To prevent concurrent installations into the same `/data` volume, the image uses
 
 - `/data/.hytale-curseforge-mods-lock`
 
+## Production strategies: dependency conflicts and version mismatches
+
+CurseForge projects can have optional or required dependencies, and multiple mods may ship incompatible versions of shared libraries.
+The image does not attempt to solve a dependency graph or resolve conflicts automatically.
+In production, treat the mod list as a versioned input and use repeatable rollouts.
+
+- **Pin exact file IDs for stability**
+  - Prefer `modId:fileId` for all critical mods.
+  - This avoids unexpected updates when containers restart.
+
+- **Freeze updates during normal operation**
+  - Set `HYTALE_CURSEFORGE_AUTO_UPDATE=false` to prevent silent drift.
+  - If you want periodic updates, use a staging environment and promote the pinned file IDs into production.
+
+- **Staged rollouts (canary) instead of updating everything at once**
+  - Maintain the mod list in a single source of truth (for example a file you mount and reference via `@/path/to/mods.txt`).
+  - Roll out changes to a single instance first, validate startup and gameplay, then expand to the full fleet.
+
+- **Make dependencies explicit**
+  - If a mod requires another CurseForge project, list the dependency explicitly in `HYTALE_CURSEFORGE_MODS`.
+  - If you rely on keyword selection (`modId@keyword`), prefer migrating to `modId:fileId` once you have identified a known-good version.
+
+- **Avoid cross-instance mismatches**
+  - Ensure all instances use the same mod list and the same update policy.
+  - If instances share a persistent `/data` volume, keep `HYTALE_CURSEFORGE_LOCK=true` to avoid concurrent installs.
+  - If instances do not share `/data`, pinning file IDs is the most reliable way to keep versions aligned.
+
+- **Operational troubleshooting (conflicts / crashes)**
+  - If startup crashes after a mod update, temporarily pin the previously working file ID and restart.
+  - Use `HYTALE_CURSEFORGE_FAIL_ON_ERROR=true` to prevent starting with a partially installed mod set.
+  - If you suspect a specific mod conflict, bisect by removing half the mods, then narrow down until the problematic entry is found.
+
 ## Troubleshooting
 
 - If the container logs warn about a missing API key:
