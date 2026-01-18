@@ -88,8 +88,12 @@ See: [`curseforge-mods.md`](curseforge-mods.md)
 | `HYTALE_GAME_ZIP_PATH` | `/data/game.zip` | Where the downloader stores the downloaded game package zip. |
 | `HYTALE_KEEP_GAME_ZIP` | `false` | If `true`, keep the downloaded game zip after extraction. |
 | `HYTALE_DOWNLOAD_LOCK` | `true` | If `false`, disables the download lock (power users). Keeping the lock enabled prevents concurrent downloads into the same `/data` volume. |
+| `TZ` | *(empty)* | Optional timezone name (for example `Europe/Berlin`). If set, passed to the JVM as `-Duser.timezone=...`. |
 | `JVM_XMS` | *(empty)* | Passed as `-Xms...` (initial heap). |
 | `JVM_XMX` | *(empty)* | Passed as `-Xmx...` (max heap). |
+| `HYTALE_JAVA_TERMINAL_PROPS` | `true` | If `true`, sets terminal-related JVM properties (`-Dterminal.jline=...`, `-Dterminal.ansi=...`). |
+| `JVM_TERMINAL_JLINE` | `false` | Used when `HYTALE_JAVA_TERMINAL_PROPS=true`: passed as `-Dterminal.jline=...`. |
+| `JVM_TERMINAL_ANSI` | `true` | Used when `HYTALE_JAVA_TERMINAL_PROPS=true`: passed as `-Dterminal.ansi=...`. |
 | `JVM_EXTRA_ARGS` | *(empty)* | Extra JVM args appended to the `java` command. |
 | `ENABLE_AOT` | `auto` | `auto\|true\|false\|generate` (controls `-XX:AOTCache=...`). |
 | `EXTRA_SERVER_ARGS` | *(empty)* | Extra server args appended at the end. |

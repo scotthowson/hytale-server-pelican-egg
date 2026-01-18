@@ -85,6 +85,8 @@ HYTALE_AUTO_UPDATE="${HYTALE_AUTO_UPDATE:-true}"
 
 HYTALE_CONSOLE_PIPE="${HYTALE_CONSOLE_PIPE:-true}"
 
+HYTALE_JAVA_TERMINAL_PROPS="${HYTALE_JAVA_TERMINAL_PROPS:-true}"
+
 HYTALE_CURSEFORGE_MODS="${HYTALE_CURSEFORGE_MODS:-}"
 
 ENABLE_AOT="${ENABLE_AOT:-auto}"
@@ -236,6 +238,10 @@ if [ -n "${JVM_XMX:-}" ]; then
   log "- JVM_XMX: ${JVM_XMX}"
 fi
 
+if [ -n "${TZ:-}" ]; then
+  log "- TZ: ${TZ}"
+fi
+
 if [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ]; then
   log "- Session token: [set]"
 fi
@@ -252,6 +258,10 @@ fi
 
 if [ -n "${JVM_XMX:-}" ]; then
   set -- "$@" "-Xmx${JVM_XMX}"
+fi
+
+if [ -n "${TZ:-}" ]; then
+  set -- "$@" "-Duser.timezone=${TZ}"
 fi
 
 aot_generate=0
@@ -290,6 +300,12 @@ case "$(lower "${ENABLE_AOT}")" in
     exit 1
     ;;
 esac
+
+if is_true "${HYTALE_JAVA_TERMINAL_PROPS}"; then
+  terminal_jline="${JVM_TERMINAL_JLINE:-false}"
+  terminal_ansi="${JVM_TERMINAL_ANSI:-true}"
+  set -- "$@" "-Dterminal.jline=${terminal_jline}" "-Dterminal.ansi=${terminal_ansi}"
+fi
 
 if [ -n "${JVM_EXTRA_ARGS:-}" ]; then
   set -- "$@" ${JVM_EXTRA_ARGS}
