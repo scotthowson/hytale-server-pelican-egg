@@ -6,11 +6,10 @@ RUN apt-get update \
 
 RUN groupadd -f hytale \
   && if ! id -u hytale >/dev/null 2>&1; then useradd -m -u 1000 -o -g hytale -s /usr/sbin/nologin hytale; fi \
-  && touch /etc/machine-id \
-  && chown hytale:hytale /etc/machine-id
-
-RUN mkdir -p /data \
-  && chown -R hytale:hytale /data
+  && mkdir -p /data \
+  && chown -R hytale:hytale /data \
+  && rm -f /etc/machine-id \
+  && ln -s /data/.machine-id /etc/machine-id
 
 VOLUME ["/data"]
 WORKDIR /data
