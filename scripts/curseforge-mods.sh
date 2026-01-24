@@ -60,6 +60,11 @@ expand_refs() {
 
 DATA_DIR="${DATA_DIR:-/data}"
 CF_API_BASE="https://api.curseforge.com"
+CF_API_HOST="api.curseforge.com"
+
+HYTALE_CURSEFORGE_HTTP_CACHE_URL="${HYTALE_CURSEFORGE_HTTP_CACHE_URL:-}"
+HYTALE_CURSEFORGE_HTTP_CACHE_API_URL="${HYTALE_CURSEFORGE_HTTP_CACHE_API_URL:-${HYTALE_CURSEFORGE_HTTP_CACHE_URL}}"
+HYTALE_CURSEFORGE_HTTP_CACHE_DOWNLOAD_URL="${HYTALE_CURSEFORGE_HTTP_CACHE_DOWNLOAD_URL:-${HYTALE_CURSEFORGE_HTTP_CACHE_URL}}"
 
 HYTALE_MODS_PATH="${HYTALE_MODS_PATH:-}"
 
@@ -154,7 +159,13 @@ case "${HYTALE_CURSEFORGE_API_KEY}" in
 esac
 
 log "CurseForge mods: testing API key..."
-test_http_code="$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 --connect-timeout 10 -H "x-api-key: ${HYTALE_CURSEFORGE_API_KEY}" "${CF_API_BASE}/v1/games" 2>/dev/null || echo "000")"
+test_api_url="${CF_API_BASE}/v1/games"
+if [ -n "${HYTALE_CURSEFORGE_HTTP_CACHE_API_URL}" ]; then
+  test_api_url="${HYTALE_CURSEFORGE_HTTP_CACHE_API_URL%/}/v1/games"
+  test_http_code="$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 --connect-timeout 10 -H "Host: ${CF_API_HOST}" -H "x-api-key: ${HYTALE_CURSEFORGE_API_KEY}" "${test_api_url}" 2>/dev/null || echo "000")"
+else
+  test_http_code="$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 --connect-timeout 10 -H "x-api-key: ${HYTALE_CURSEFORGE_API_KEY}" "${test_api_url}" 2>/dev/null || echo "000")"
+fi
 if [ "${test_http_code}" != "200" ]; then
   log "ERROR: CurseForge API key test failed (HTTP ${test_http_code})"
   log "ERROR: Please verify your API key at https://console.curseforge.com/"
@@ -263,8 +274,17 @@ esac
 cf_get() {
   path="$1"
   url="${CF_API_BASE}${path}"
+  host_header=""
+  if [ -n "${HYTALE_CURSEFORGE_HTTP_CACHE_API_URL}" ]; then
+    url="${HYTALE_CURSEFORGE_HTTP_CACHE_API_URL%/}${path}"
+    host_header="${CF_API_HOST}"
+  fi
   for attempt in 1 2 3; do
-    out="$(curl -fsSL --max-time 30 --connect-timeout 10 -H "Accept: application/json" -H "x-api-key: ${HYTALE_CURSEFORGE_API_KEY}" "${url}" 2>/dev/null || true)"
+    if [ -n "${host_header}" ]; then
+      out="$(curl -fsSL --max-time 30 --connect-timeout 10 -H "Host: ${host_header}" -H "Accept: application/json" -H "x-api-key: ${HYTALE_CURSEFORGE_API_KEY}" "${url}" 2>/dev/null || true)"
+    else
+      out="$(curl -fsSL --max-time 30 --connect-timeout 10 -H "Accept: application/json" -H "x-api-key: ${HYTALE_CURSEFORGE_API_KEY}" "${url}" 2>/dev/null || true)"
+    fi
     if [ -n "${out}" ]; then
       printf '%s' "${out}"
       return 0
@@ -297,6 +317,24 @@ download_and_install() {
     return 1
   fi
 
+  download_fetch_url="${download_url}"
+  download_host_header=""
+  if [ -n "${HYTALE_CURSEFORGE_HTTP_CACHE_DOWNLOAD_URL}" ]; then
+    case "${download_url}" in
+      http://*|https://*)
+        rest="${download_url#*://}"
+        download_host="${rest%%/*}"
+        if [ "${rest#*/}" = "${rest}" ]; then
+          download_path="/"
+        else
+          download_path="/${rest#*/}"
+        fi
+        download_fetch_url="${HYTALE_CURSEFORGE_HTTP_CACHE_DOWNLOAD_URL%/}${download_path}"
+        download_host_header="${download_host}"
+        ;;
+    esac
+  fi
+
   sha1="$(printf '%s' "${file_json}" | jq -r '.hashes[]? | select(.algo==1) | .value' 2>/dev/null | head -n 1 || true)"
   md5="$(printf '%s' "${file_json}" | jq -r '.hashes[]? | select(.algo==2) | .value' 2>/dev/null | head -n 1 || true)"
 
@@ -305,7 +343,18 @@ download_and_install() {
   dest_path="${dest_dir}/${file_name}"
 
   tmp_dl="${DOWNLOADS_DIR}/${mod_id}-${file_id}.tmp.$$"
-  if ! curl -fL --max-time 300 --connect-timeout 30 --retry 3 --retry-delay 1 -o "${tmp_dl}" "${download_url}" >/dev/null 2>&1; then
+  if [ -n "${download_host_header}" ]; then
+    dl_ok=0
+    if curl -fL --max-time 300 --connect-timeout 30 --retry 3 --retry-delay 1 -H "Host: ${download_host_header}" -o "${tmp_dl}" "${download_fetch_url}" >/dev/null 2>&1; then
+      dl_ok=1
+    fi
+  else
+    dl_ok=0
+    if curl -fL --max-time 300 --connect-timeout 30 --retry 3 --retry-delay 1 -o "${tmp_dl}" "${download_fetch_url}" >/dev/null 2>&1; then
+      dl_ok=1
+    fi
+  fi
+  if [ "${dl_ok}" -ne 1 ]; then
     rm -f "${tmp_dl}" 2>/dev/null || true
     return 1
   fi
