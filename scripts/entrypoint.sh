@@ -495,7 +495,16 @@ if is_true "${HYTALE_CONSOLE_PIPE}"; then
     chmod 0600 "${CONSOLE_FIFO}" 2>/dev/null || true
   fi
 
+  # Keep the FIFO open for both reading and writing.
+  # We also forward stdin into the FIFO so interactive attaches (docker/kubectl)
+  # keep working while still allowing hytale-cli to inject commands via the FIFO.
+  exec 4<&0
   exec 3<> "${CONSOLE_FIFO}"
+  (
+    while IFS= read -r line <&4; do
+      printf '%s\n' "${line}" >&3
+    done
+  ) &
   cd "${SERVER_DIR}"
   exec "$@" <&3
 fi
