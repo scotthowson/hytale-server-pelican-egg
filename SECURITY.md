@@ -12,7 +12,7 @@ Instead, use GitHub Security Advisories:
  
 - https://github.com/Hybrowse/hytale-server-docker/security/advisories/new
  
-Include:
+Includes:
  
 - affected image tag(s)
 - reproduction steps
