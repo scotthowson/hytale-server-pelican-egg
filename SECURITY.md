@@ -10,7 +10,7 @@ Please **do not** open a public issue for security vulnerabilities.
  
 Instead, use GitHub Security Advisories:
  
-- https://github.com/Hybrowse/hytale-server-docker/security/advisories/new
+- https://github.com/scotthowson/hytale-server-pelican/security/advisories/new
  
 Includes:
  

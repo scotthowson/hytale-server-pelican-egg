@@ -9,7 +9,7 @@ Persistence:
   To run without persistence, set persistence.enabled=false.
 
 Configuration:
-  Use .Values.env to set environment variables (see https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/configuration.md).
+  Use .Values.env to set environment variables (see https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md).
   HYTALE_BIND defaults to 0.0.0.0:{{ .Values.service.port }} unless you set env.HYTALE_BIND.
 
 Naming:

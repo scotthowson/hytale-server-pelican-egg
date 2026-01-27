@@ -24,7 +24,7 @@ check_data_writable() {
     log "ERROR: Cannot write to ${DATA_DIR}"
     log "ERROR: The /data volume must be writable by UID $(id -u)."
     log "ERROR: Fix: 'sudo chown -R $(id -u):$(id -g) <host-path>'"
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/troubleshooting.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
 }
@@ -37,7 +37,7 @@ check_dir_writable() {
     log "ERROR: Current owner: $(ls -ld "${dir}" 2>/dev/null | awk '{print $3":"$4}')"
     log "ERROR: Fix: 'sudo chown -R $(id -u):$(id -g) <host-path>'"
     log "ERROR: Or delete the directory and let the container recreate it."
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/troubleshooting.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
 }
@@ -138,7 +138,7 @@ setup_machine_id() {
   if ! ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE}" ) 2>/dev/null; then
     log "WARNING: Could not write to ${MACHINE_ID_FILE} (read-only filesystem?)"
     log "WARNING: The Hytale server may fail with 'Failed to get Hardware UUID'."
-    log "WARNING: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/troubleshooting.md"
+    log "WARNING: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
   fi
   printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
 }
@@ -147,7 +147,7 @@ setup_machine_id
 
 log "Thank you for using the Hytale Server Docker Image by Hybrowse!"
 log "- Add your server to our server list: https://hybrowse.gg"
-log "- GitHub: https://github.com/Hybrowse/hytale-server-docker"
+log "- GitHub: https://github.com/scotthowson/hytale-server-pelican"
 log "- Console: 'docker compose attach hytale' (detach: Ctrl-p then Ctrl-q)"
 log ""
 
@@ -206,8 +206,8 @@ if [ "${missing}" -ne 0 ]; then
   log "- Place Assets.zip into ${DATA_DIR}/Assets.zip"
   log "- Or set HYTALE_AUTO_DOWNLOAD=true"
   log "- On Apple Silicon (arm64): auto-download requires running the container as linux/amd64 (Docker Compose: platform: linux/amd64)"
-  log "- See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/server-files.md"
-  log "- See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/quickstart.md"
+  log "- See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/server-files.md"
+  log "- See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/quickstart.md"
   exit 1
 fi
 
@@ -307,7 +307,7 @@ case "$(lower "${ENABLE_AOT}")" in
     else
       log "ERROR: ENABLE_AOT=true but AOT cache file does not exist: ${HYTALE_AOT_PATH}"
       log "ERROR: Generate an AOT cache (ENABLE_AOT=generate) or disable AOT (ENABLE_AOT=false)."
-      log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/configuration.md"
+      log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md"
       exit 1
     fi
     ;;
@@ -316,7 +316,7 @@ case "$(lower "${ENABLE_AOT}")" in
     ;;
   *)
     log "ERROR: Invalid ENABLE_AOT value: ${ENABLE_AOT} (expected: auto|true|false|generate)"
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/configuration.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md"
     exit 1
     ;;
 esac

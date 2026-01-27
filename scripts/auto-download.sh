@@ -27,7 +27,7 @@ check_dir_writable() {
     log "ERROR: Current owner: $(ls -ld "${dir}" 2>/dev/null | awk '{print $3":"$4}')"
     log "ERROR: Fix: 'sudo chown -R $(id -u):$(id -g) <host-path>'"
     log "ERROR: Or delete the directory and let the container recreate it."
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/troubleshooting.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
 }
@@ -95,7 +95,7 @@ if is_true "${HYTALE_DOWNLOAD_LOCK}"; then
     log "ERROR: Auto-download: could not acquire lock ${LOCK_DIR}"
     log "ERROR: If no other container is running, the lock may be stale. You can delete ${LOCK_DIR} and try again."
     log "ERROR: Power users can disable the lock with HYTALE_DOWNLOAD_LOCK=false (risk: concurrent downloads may corrupt /data)."
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/configuration.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md"
     exit 1
   fi
 else
@@ -116,7 +116,7 @@ case "${HYTALE_DOWNLOADER_URL}" in
   https://downloader.hytale.com/*) ;;
   *)
     log "ERROR: HYTALE_DOWNLOADER_URL must start with https://downloader.hytale.com/"
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/configuration.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md"
     exit 1
     ;;
 esac
@@ -130,14 +130,14 @@ case "${arch}" in
   aarch64|arm64)
     log "ERROR: Auto-download is not supported on arm64 because the official downloader archive does not include a linux-arm64 binary."
     log "ERROR: Please provide server files and Assets.zip manually on arm64, or run this container as linux/amd64 (Docker Compose: platform: linux/amd64)."
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/quickstart.md"
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/server-files.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/quickstart.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/server-files.md"
     exit 1
     ;;
   *)
     log "ERROR: Unsupported architecture for downloader in container: ${arch}"
     log "ERROR: Please provide server files and Assets.zip manually."
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/server-files.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/server-files.md"
     exit 1
     ;;
 esac
@@ -151,7 +151,7 @@ if [ ! -x "${DOWNLOADER_BIN}" ]; then
   if ! unzip -p "${ZIP_PATH}" "${bin_name}" >"${DOWNLOADER_BIN}" 2>/dev/null; then
     log "ERROR: Could not find ${bin_name} in official downloader archive"
     log "ERROR: Ensure HYTALE_DOWNLOADER_URL points to the official downloader archive."
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/configuration.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md"
     exit 1
   fi
 
@@ -168,7 +168,7 @@ cd "${DATA_DIR}"
 if [ -n "${HYTALE_DOWNLOADER_CREDENTIALS_SRC}" ]; then
   if [ ! -f "${HYTALE_DOWNLOADER_CREDENTIALS_SRC}" ]; then
     log "ERROR: HYTALE_DOWNLOADER_CREDENTIALS_SRC is set but file does not exist: ${HYTALE_DOWNLOADER_CREDENTIALS_SRC}"
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/configuration.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md"
     exit 1
   fi
 
@@ -227,7 +227,7 @@ fi
 if [ ! -f "${HYTALE_GAME_ZIP_PATH}" ]; then
   log "ERROR: Auto-download: expected download zip not found: ${HYTALE_GAME_ZIP_PATH}"
   log "ERROR: The downloader may have failed or requires device-code login on first run (see logs above)."
-  log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/quickstart.md"
+  log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/quickstart.md"
   exit 1
 fi
 
@@ -243,7 +243,7 @@ if [ -d "${tmp_extract_dir}/Server" ]; then
     log "ERROR: Failed to copy server files to ${SERVER_DIR}/"
     log "ERROR: This usually means the directory has wrong permissions."
     log "ERROR: Fix: ensure ${SERVER_DIR} is owned by UID 1000 (e.g., 'sudo chown -R 1000:1000 ${SERVER_DIR}')"
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/troubleshooting.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
 fi
@@ -252,13 +252,13 @@ rm -rf "${tmp_extract_dir}" 2>/dev/null || true
 
 if [ ! -f "${HYTALE_ASSETS_PATH}" ]; then
   log "ERROR: Auto-download: Assets.zip not found after extraction at ${HYTALE_ASSETS_PATH}"
-  log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/server-files.md"
+  log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/server-files.md"
   exit 1
 fi
 
 if [ ! -f "${HYTALE_SERVER_JAR}" ]; then
   log "ERROR: Auto-download: HytaleServer.jar not found after extraction at ${HYTALE_SERVER_JAR}"
-  log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/server-files.md"
+  log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/server-files.md"
   exit 1
 fi
 

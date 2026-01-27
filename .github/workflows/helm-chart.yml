@@ -39,7 +39,7 @@ jobs:
             --app-version "${version}" \
             --destination .chart-repo
 
-          url="https://scotthowson.github.io/hytale-server-docker"
+          url="https://scotthowson.github.io/hytale-server-pelican"
           if [ -f .chart-repo/index.yaml ]; then
             cp .chart-repo/index.yaml /tmp/index.yaml
             helm repo index .chart-repo --url "${url}" --merge /tmp/index.yaml

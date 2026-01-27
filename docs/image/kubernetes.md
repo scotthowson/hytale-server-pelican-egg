@@ -35,12 +35,12 @@ The Helm chart lives in `deploy/helm/hytale-server`.
 
 After a release is published, the Helm repository is available at:
 
-- `https://hybrowse.github.io/hytale-server-docker`
+- `https://scotthowson.github.io/hytale-server-pelican`
 
 Add it:
 
 ```bash
-helm repo add hybrowse https://hybrowse.github.io/hytale-server-docker
+helm repo add hybrowse https://scotthowson.github.io/hytale-server-pelican
 helm repo update
 ```
 

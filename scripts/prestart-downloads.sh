@@ -45,7 +45,7 @@ check_dir_writable() {
     log "ERROR: Current owner: $(ls -ld "${dir}" 2>/dev/null | awk '{print $3":"$4}')"
     log "ERROR: Fix: 'sudo chown -R $(id -u):$(id -g) <host-path>'"
     log "ERROR: Or delete the directory and let the container recreate it."
-    log "ERROR: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/troubleshooting.md"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
 }

@@ -1,6 +1,10 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -32,10 +36,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/scotthowson/hytale-server-docker
+            ghcr.io/scotthowson/hytale-server-pelican
           tags: |
+            type=ref,event=branch
             type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ github.event.release.prerelease == false }}
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
         uses: docker/build-push-action@v6
