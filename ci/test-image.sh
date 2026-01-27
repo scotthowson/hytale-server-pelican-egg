@@ -21,7 +21,7 @@ pass "default user is non-root (uid=${uid})"
 workdir="$(mktemp -d)"
 chmod 0777 "${workdir}"
 set +e
-out="$(docker run --rm -v "${workdir}:/data" "${IMAGE_NAME}" 2>&1)"
+out="$(docker run --rm -v "${workdir}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected non-zero exit status when files missing"
@@ -44,7 +44,7 @@ chmod 0777 "${workdir}/server"
 : > "${workdir}/Assets.zip"
 : > "${workdir}/server/HytaleServer.jar"
 set +e
-out="$(docker run --rm -e ENABLE_AOT=true -v "${workdir}:/data" "${IMAGE_NAME}" 2>&1)"
+out="$(docker run --rm -e ENABLE_AOT=true -v "${workdir}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected non-zero exit status when ENABLE_AOT=true and cache missing"
@@ -53,7 +53,7 @@ pass "ENABLE_AOT=true fails fast when cache missing"
 
 # Test 3b: backup flag is recognized by the entrypoint
 set +e
-out="$(docker run --rm -e HYTALE_ENABLE_BACKUP=true -v "${workdir}:/data" "${IMAGE_NAME}" 2>&1)"
+out="$(docker run --rm -e HYTALE_ENABLE_BACKUP=true -v "${workdir}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected non-zero exit status due to dummy jar"
@@ -67,7 +67,7 @@ bad_urls="$(printf '%s\n' \
 set +e
 out="$(docker run --rm \
   -e "HYTALE_MODS_DOWNLOAD_URLS=${bad_urls}" \
-  -v "${workdir}:/data" \
+  -v "${workdir}:/home/container" \
   "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
@@ -86,7 +86,7 @@ set +e
 out="$(docker run --rm \
   -e HYTALE_AUTO_DOWNLOAD=true \
   -e HYTALE_DOWNLOADER_URL=https://example.com/hytale-downloader.zip \
-  -v "${workdir2}:/data" "${IMAGE_NAME}" 2>&1)"
+  -v "${workdir2}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected non-zero exit status when HYTALE_DOWNLOADER_URL is not official"
@@ -112,7 +112,7 @@ set +e
 out="$(docker run --rm \
   -e HYTALE_AUTO_DOWNLOAD=true \
   -e HYTALE_DOWNLOADER_URL=https://example.com/hytale-downloader.zip \
-  -v "${workdir2b}:/data" "${IMAGE_NAME}" 2>&1)"
+  -v "${workdir2b}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected non-zero exit status when auto-update attempts downloader with invalid URL"
@@ -134,7 +134,7 @@ out="$(docker run --rm \
   -e HYTALE_AUTO_DOWNLOAD=true \
   -e HYTALE_AUTO_UPDATE=false \
   -e HYTALE_DOWNLOADER_URL=https://example.com/hytale-downloader.zip \
-  -v "${workdir2c}:/data" "${IMAGE_NAME}" 2>&1)"
+  -v "${workdir2c}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected non-zero exit status due to dummy jar"
@@ -156,7 +156,7 @@ set +e
 out="$(docker run --rm \
   --entrypoint /usr/local/bin/hytale-auto-download \
   -e HYTALE_TEST_ARCH=aarch64 \
-  -v "${workdir3}:/data" \
+  -v "${workdir3}:/home/container" \
   "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
@@ -177,7 +177,7 @@ printf '%s\n' "${stale_epoch}" >"${workdir4}/.hytale-download-lock/created_at_ep
 set +e
 out="$(docker run --rm \
   --entrypoint /usr/local/bin/hytale-auto-download \
-  -v "${workdir4}:/data" \
+  -v "${workdir4}:/home/container" \
   -e HYTALE_DOWNLOADER_URL=https://example.com/hytale-downloader.zip \
   "${IMAGE_NAME}" 2>&1)"
 status=$?
@@ -195,7 +195,7 @@ set +e
 out="$(docker run --rm \
   -e HYTALE_SERVER_SESSION_TOKEN="${TOKEN_VALUE}" \
   -e HYTALE_SERVER_IDENTITY_TOKEN="${TOKEN_VALUE}" \
-  -v "${workdir}:/data" "${IMAGE_NAME}" 2>&1)"
+  -v "${workdir}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected java to fail with dummy jar, but got status 0"
@@ -213,7 +213,7 @@ chmod 0777 "${workdir5}/server"
 : > "${workdir5}/Assets.zip"
 : > "${workdir5}/server/HytaleServer.jar"
 set +e
-out="$(docker run --rm -v "${workdir5}:/data" "${IMAGE_NAME}" 2>&1)"
+out="$(docker run --rm -v "${workdir5}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected java to fail with dummy jar"
@@ -228,7 +228,7 @@ pass "machine-id is generated and persisted"
 
 # Test 8b: machine-id is stable across restarts
 set +e
-out2="$(docker run --rm -v "${workdir5}:/data" "${IMAGE_NAME}" 2>&1)"
+out2="$(docker run --rm -v "${workdir5}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected java to fail with dummy jar"
@@ -239,7 +239,7 @@ pass "machine-id is stable across restarts"
 # Test 8c: HYTALE_MACHINE_ID can override machine-id
 CUSTOM_MACHINE_ID="0123456789abcdef0123456789abcdef"
 set +e
-out3="$(docker run --rm -e HYTALE_MACHINE_ID="${CUSTOM_MACHINE_ID}" -v "${workdir5}:/data" "${IMAGE_NAME}" 2>&1)"
+out3="$(docker run --rm -e HYTALE_MACHINE_ID="${CUSTOM_MACHINE_ID}" -v "${workdir5}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected java to fail with dummy jar"
@@ -252,7 +252,7 @@ pass "HYTALE_MACHINE_ID can override machine-id"
 
 rm -rf "${workdir5}"
 
-# Test 9: permission check fails when /data is not writable
+# Test 9: permission check fails when /home/container is not writable
 # Note: We can't use :ro mount because Docker's WORKDIR fails before entrypoint runs.
 # Instead, create a directory owned by root that the container user (1000) cannot write to.
 workdir6="$(mktemp -d)"
@@ -260,30 +260,30 @@ mkdir -p "${workdir6}/server"
 chmod 0777 "${workdir6}/server"
 chmod 0555 "${workdir6}"
 set +e
-out="$(docker run --rm -v "${workdir6}:/data" "${IMAGE_NAME}" 2>&1)"
+out="$(docker run --rm -v "${workdir6}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
-[ ${status} -ne 0 ] || fail "expected non-zero exit status when /data is not writable"
-echo "${out}" | grep -q "Cannot write to /data" || fail "expected /data not writable error"
+[ ${status} -ne 0 ] || fail "expected non-zero exit status when /home/container is not writable"
+echo "${out}" | grep -q "Cannot write to /home/container" || fail "expected /home/container not writable error"
 echo "${out}" | grep -q "troubleshooting.md" || fail "expected troubleshooting docs link"
-pass "permission check fails when /data is not writable"
+pass "permission check fails when /home/container is not writable"
 chmod 0755 "${workdir6}"
 rm -rf "${workdir6}"
 
-# Test 10: permission check fails when /data/server exists but is not writable
+# Test 10: permission check fails when /home/container/server exists but is not writable
 workdir7="$(mktemp -d)"
 chmod 0777 "${workdir7}"
 mkdir -p "${workdir7}/server"
 chmod 0555 "${workdir7}/server"
 set +e
-out="$(docker run --rm -v "${workdir7}:/data" "${IMAGE_NAME}" 2>&1)"
+out="$(docker run --rm -v "${workdir7}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
-[ ${status} -ne 0 ] || fail "expected non-zero exit status when /data/server is not writable"
-echo "${out}" | grep -q "Cannot write to /data/server" || fail "expected /data/server not writable error"
+[ ${status} -ne 0 ] || fail "expected non-zero exit status when /home/container/server is not writable"
+echo "${out}" | grep -q "Cannot write to /home/container/server" || fail "expected /home/container/server not writable error"
 echo "${out}" | grep -q "Current owner:" || fail "expected current owner info in error"
 echo "${out}" | grep -q "troubleshooting.md" || fail "expected troubleshooting docs link"
-pass "permission check fails when /data/server is not writable"
+pass "permission check fails when /home/container/server is not writable"
 chmod 0755 "${workdir7}/server"
 rm -rf "${workdir7}"
 
@@ -295,14 +295,14 @@ chmod 0777 "${workdir8}/server"
 : > "${workdir8}/Assets.zip"
 : > "${workdir8}/server/HytaleServer.jar"
 set +e
-out="$(docker run --rm --read-only --tmpfs /tmp -v "${workdir8}:/data" "${IMAGE_NAME}" 2>&1)"
+out="$(docker run --rm --read-only --tmpfs /tmp -v "${workdir8}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
 [ ${status} -ne 0 ] || fail "expected java to fail with dummy jar"
 if echo "${out}" | grep -q "cannot create /etc/machine-id"; then
   fail "machine-id error should be suppressed on read-only root filesystem"
 fi
-[ -f "${workdir8}/.machine-id" ] || fail "expected .machine-id to be created on /data"
+[ -f "${workdir8}/.machine-id" ] || fail "expected .machine-id to be created on /home/container"
 pass "read-only root filesystem does not cause machine-id error output"
 rm -rf "${workdir8}"
 
