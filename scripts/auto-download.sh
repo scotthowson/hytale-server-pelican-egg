@@ -16,8 +16,8 @@ is_true() {
   esac
 }
 
-DATA_DIR="${DATA_DIR:-/data}"
-SERVER_DIR="${SERVER_DIR:-/data/server}"
+DATA_DIR="${DATA_DIR:-/home/container}"
+SERVER_DIR="${SERVER_DIR:-/home/container/server}"
 
 check_dir_writable() {
   dir="$1"

@@ -203,8 +203,8 @@ download_url_list() {
   fi
 }
 
-DATA_DIR="${DATA_DIR:-/data}"
-SERVER_DIR="${SERVER_DIR:-/data/server}"
+DATA_DIR="${DATA_DIR:-/home/container}"
+SERVER_DIR="${SERVER_DIR:-/home/container/server}"
 
 HYTALE_UNIVERSE_DOWNLOAD_URLS="${HYTALE_UNIVERSE_DOWNLOAD_URLS:-}"
 HYTALE_UNIVERSE_DOWNLOAD_PATH="${HYTALE_UNIVERSE_DOWNLOAD_PATH:-}"

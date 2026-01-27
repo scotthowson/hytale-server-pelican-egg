@@ -16,8 +16,8 @@ log() {
   printf '%s\n' "$*" >&2
 }
 
-DATA_DIR="/data"
-SERVER_DIR="/data/server"
+DATA_DIR="${DATA_DIR:-/home/container}"
+SERVER_DIR="${SERVER_DIR:-/home/container/server}"
 
 check_data_writable() {
   if [ ! -w "${DATA_DIR}" ]; then
@@ -220,8 +220,8 @@ if [ -n "${HYTALE_CURSEFORGE_MODS}" ]; then
   /usr/local/bin/hytale-curseforge-mods
 fi
 
-DATA_DIR="${DATA_DIR:-/data}"
-SERVER_DIR="${SERVER_DIR:-/data/server}"
+DATA_DIR="${DATA_DIR:-/home/container}"
+SERVER_DIR="${SERVER_DIR:-/home/container/server}"
 export DATA_DIR SERVER_DIR
 
 /usr/local/bin/hytale-prestart-downloads

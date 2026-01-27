@@ -16,8 +16,8 @@ log() {
   printf '%s\n' "$*" >&2
 }
 
-DATA_DIR="${DATA_DIR:-/data}"
-SERVER_DIR="${SERVER_DIR:-/data/server}"
+DATA_DIR="${DATA_DIR:-/home/container}"
+SERVER_DIR="${SERVER_DIR:-/home/container/server}"
 
 cfg_interpolation_enabled() {
   if ! is_true "${HYTALE_CFG_INTERPOLATION:-true}"; then
