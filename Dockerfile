@@ -1,7 +1,7 @@
 FROM eclipse-temurin:25-jre
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends tini ca-certificates curl unzip jq \
+  && apt-get install -y --no-install-recommends tini ca-certificates curl unzip jq dmidecode \
   && rm -rf /var/lib/apt/lists/*
 
 # Create hytale user/group with UID 1000 for default (non-Pelican) usage
