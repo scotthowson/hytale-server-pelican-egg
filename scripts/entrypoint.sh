@@ -127,16 +127,13 @@ mkdir -p "${SERVER_DIR}"
 check_dir_writable "${SERVER_DIR}"
 
 setup_machine_id() {
-  MACHINE_ID_FILE_ETC="/etc/machine-id"
-  MACHINE_ID_FILE_DBUS="/var/lib/dbus/machine-id"
+  MACHINE_ID_FILE="${DATA_DIR}/.machine-id"
   MACHINE_ID_PERSISTENT="${DATA_DIR}/.machine-id"
 
   if [ -n "${HYTALE_MACHINE_ID}" ]; then
     machine_id="${HYTALE_MACHINE_ID}"
-    log "Using machine-id from HYTALE_MACHINE_ID environment variable"
   elif [ -f "${MACHINE_ID_PERSISTENT}" ]; then
     machine_id="$(cat "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true)"
-    log "Loaded machine-id from persistent storage: ${MACHINE_ID_PERSISTENT}"
   else
     machine_id=""
   fi
@@ -147,7 +144,6 @@ setup_machine_id() {
     else
       machine_id="$(cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-' | tr '[:upper:]' '[:lower:]' || true)"
     fi
-    log "Generated new machine-id"
   fi
 
   if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
@@ -155,34 +151,12 @@ setup_machine_id() {
     exit 1
   fi
 
-  # Write to all standard locations that Java's HardwareUtil might check
-  wrote_success=0
-  
-  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" 2>/dev/null; then
-    log "Successfully wrote machine-id to ${MACHINE_ID_FILE_ETC}"
-    wrote_success=1
-  else
-    log "WARNING: Could not write to ${MACHINE_ID_FILE_ETC}"
-  fi
-  
-  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" 2>/dev/null; then
-    log "Successfully wrote machine-id to ${MACHINE_ID_FILE_DBUS}"
-    wrote_success=1
-  else
-    log "WARNING: Could not write to ${MACHINE_ID_FILE_DBUS}"
-  fi
-  
-  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null; then
-    log "Successfully saved machine-id to persistent storage"
-  else
-    log "WARNING: Could not save machine-id to ${MACHINE_ID_PERSISTENT}"
-  fi
-  
-  if [ "${wrote_success}" -eq 0 ]; then
-    log "WARNING: Could not write machine-id to any system location"
+  if ! ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE}" ) 2>/dev/null; then
+    log "WARNING: Could not write to ${MACHINE_ID_FILE} (read-only filesystem?)"
     log "WARNING: The Hytale server may fail with 'Failed to get Hardware UUID'."
     log "WARNING: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
   fi
+  printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
 }
 
 setup_machine_id
@@ -324,24 +298,6 @@ fi
 
 if [ -n "${TZ:-}" ]; then
   set -- "$@" "-Duser.timezone=${TZ}"
-fi
-
-# Pass machine-id to Java for hardware UUID detection
-# Store in a variable accessible to Java args section
-JAVA_MACHINE_ID=""
-if [ -n "${HYTALE_MACHINE_ID}" ]; then
-  JAVA_MACHINE_ID="${HYTALE_MACHINE_ID}"
-elif [ -f "${DATA_DIR}/.machine-id" ]; then
-  JAVA_MACHINE_ID="$(cat "${DATA_DIR}/.machine-id" 2>/dev/null || true)"
-fi
-
-if [ -n "${JAVA_MACHINE_ID}" ]; then
-  # Try common Java system properties that might work with HardwareUtil
-  set -- "$@" "-Dmachine.id=${JAVA_MACHINE_ID}"
-  set -- "$@" "-Dhardware.uuid=${JAVA_MACHINE_ID}"
-  # Also set as UUID format with dashes (some systems expect this)
-  JAVA_MACHINE_UUID="$(echo "${JAVA_MACHINE_ID}" | sed 's/^\(........\)\(....\)\(....\)\(....\)\(............\)$/\1-\2-\3-\4-\5/')"
-  set -- "$@" "-Dhardware.uuid.dashed=${JAVA_MACHINE_UUID}"
 fi
 
 aot_generate=0
