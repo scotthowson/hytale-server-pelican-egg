@@ -153,18 +153,29 @@ setup_machine_id() {
     exit 1
   fi
 
-  # Write to /etc/machine-id (primary location Java checks)
-  if ! printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" 2>/dev/null; then
-    log "WARNING: Could not write to ${MACHINE_ID_FILE_ETC} (read-only filesystem?)"
-    log "WARNING: The Hytale server may fail with 'Failed to get Hardware UUID'."
-    log "WARNING: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
+  # Try to write to /etc/machine-id (primary location Java checks)
+  # Suppress warnings if we successfully write to persistent storage (read-only root FS is OK)
+  wrote_etc=0
+  wrote_persistent=0
+  
+  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" 2>/dev/null; then
+    wrote_etc=1
   fi
   
   # Write to /var/lib/dbus/machine-id (secondary location)
   printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" 2>/dev/null || true
   
   # Write to persistent storage
-  printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
+  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null; then
+    wrote_persistent=1
+  fi
+  
+  # Only warn if we couldn't write to /etc/machine-id AND couldn't write to persistent storage
+  if [ "${wrote_etc}" -eq 0 ] && [ "${wrote_persistent}" -eq 0 ]; then
+    log "WARNING: Could not write to ${MACHINE_ID_FILE_ETC} (read-only filesystem?)"
+    log "WARNING: The Hytale server may fail with 'Failed to get Hardware UUID'."
+    log "WARNING: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
+  fi
   
   # Export for use in Java system properties later
   export HYTALE_RUNTIME_MACHINE_ID="${machine_id}"
