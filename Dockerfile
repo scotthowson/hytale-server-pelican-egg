@@ -11,13 +11,6 @@ RUN groupadd -f -g 1000 hytale || true \
        useradd -m -u 1000 -g 1000 -s /usr/sbin/nologin hytale; \
      fi
 
-# Setup machine-id infrastructure for hardware UUID
-# Create writable files in all locations Java's HardwareUtil might check
-RUN rm -f /etc/machine-id /var/lib/dbus/machine-id \
-  && mkdir -p /var/lib/dbus \
-  && touch /etc/machine-id /var/lib/dbus/machine-id \
-  && chmod 666 /etc/machine-id /var/lib/dbus/machine-id
-
 # Use /home/container for Pelican compatibility instead of /data
 WORKDIR /home/container
 
@@ -31,7 +24,6 @@ COPY scripts/hytale-cli.sh /usr/local/bin/hytale-cli
 COPY scripts/healthcheck.sh /usr/local/bin/hytale-healthcheck
 COPY scripts/save-auth-tokens.sh /usr/local/bin/hytale-save-auth-tokens
 COPY scripts/extract-auth-tokens.sh /usr/local/bin/hytale-extract-auth-tokens
-COPY scripts/check-machine-id.sh /usr/local/bin/check-machine-id.sh
 
 RUN chmod 0755 /usr/local/bin/hytale-entrypoint \
     /usr/local/bin/hytale-cfg-interpolate \

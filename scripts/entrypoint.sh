@@ -127,9 +127,7 @@ mkdir -p "${SERVER_DIR}"
 check_dir_writable "${SERVER_DIR}"
 
 setup_machine_id() {
-  # Write to all locations that Java's HardwareUtil might check
-  MACHINE_ID_FILE_ETC="/etc/machine-id"
-  MACHINE_ID_FILE_DBUS="/var/lib/dbus/machine-id"
+  MACHINE_ID_FILE="${DATA_DIR}/.machine-id"
   MACHINE_ID_PERSISTENT="${DATA_DIR}/.machine-id"
 
   if [ -n "${HYTALE_MACHINE_ID}" ]; then
@@ -153,32 +151,12 @@ setup_machine_id() {
     exit 1
   fi
 
-  # Try to write to /etc/machine-id (primary location Java checks)
-  # Suppress ALL output including shell errors on read-only filesystem
-  wrote_etc=0
-  wrote_persistent=0
-  
-  if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" ) >/dev/null 2>&1; then
-    wrote_etc=1
-  fi
-  
-  # Write to /var/lib/dbus/machine-id (secondary location)
-  ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" ) >/dev/null 2>&1 || true
-  
-  # Write to persistent storage
-  if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" ) >/dev/null 2>&1; then
-    wrote_persistent=1
-  fi
-  
-  # Only warn if we couldn't write to /etc/machine-id AND couldn't write to persistent storage
-  if [ "${wrote_etc}" -eq 0 ] && [ "${wrote_persistent}" -eq 0 ]; then
-    log "WARNING: Could not write to ${MACHINE_ID_FILE_ETC} (read-only filesystem?)"
+  if ! ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE}" ) 2>/dev/null; then
+    log "WARNING: Could not write to ${MACHINE_ID_FILE} (read-only filesystem?)"
     log "WARNING: The Hytale server may fail with 'Failed to get Hardware UUID'."
     log "WARNING: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
   fi
-  
-  # Export for use in Java system properties later
-  export HYTALE_RUNTIME_MACHINE_ID="${machine_id}"
+  printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
 }
 
 setup_machine_id
@@ -320,15 +298,6 @@ fi
 
 if [ -n "${TZ:-}" ]; then
   set -- "$@" "-Duser.timezone=${TZ}"
-fi
-
-# Pass machine-id to Java for hardware UUID detection
-if [ -n "${HYTALE_RUNTIME_MACHINE_ID:-}" ]; then
-  set -- "$@" "-Dmachine.id=${HYTALE_RUNTIME_MACHINE_ID}"
-  set -- "$@" "-Dhardware.uuid=${HYTALE_RUNTIME_MACHINE_ID}"
-  # Also provide UUID format with dashes (some Java code expects this)
-  JAVA_MACHINE_UUID="$(echo "${HYTALE_RUNTIME_MACHINE_ID}" | sed 's/^\(........\)\(....\)\(....\)\(....\)\(............\)$/\1-\2-\3-\4-\5/')"
-  set -- "$@" "-Dhardware.uuid.dashed=${JAVA_MACHINE_UUID}"
 fi
 
 aot_generate=0
