@@ -182,7 +182,7 @@ if [ "${test_http_code}" != "200" ]; then
 fi
 log "CurseForge mods: API key valid"
 
-CF_MODS_DIR="${HYTALE_MODS_PATH:-${DATA_DIR}/server/mods-curseforge}"
+CF_MODS_DIR="${HYTALE_MODS_PATH:-${DATA_DIR}/Server/mods-curseforge}"
 STATE_DIR="${DATA_DIR}/.hytale-curseforge-mods"
 MANAGED_DIR="${STATE_DIR}"
 DOWNLOADS_DIR="${MANAGED_DIR}/downloads"

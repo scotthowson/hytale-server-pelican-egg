@@ -213,7 +213,7 @@ fi
 
 if [ -n "${HYTALE_CURSEFORGE_MODS}" ]; then
   if [ -z "${HYTALE_MODS_PATH:-}" ]; then
-    HYTALE_MODS_PATH="${DATA_DIR}/server/mods-curseforge"
+    HYTALE_MODS_PATH="${DATA_DIR}/Server/mods-curseforge"
   fi
   mkdir -p "${HYTALE_MODS_PATH}"
   check_dir_writable "${HYTALE_MODS_PATH}"

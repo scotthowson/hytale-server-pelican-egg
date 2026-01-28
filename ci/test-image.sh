@@ -39,10 +39,10 @@ rm -rf "${workdir}"
 # Test 3: AOT strict mode fails when cache missing
 workdir="$(mktemp -d)"
 chmod 0777 "${workdir}"
-mkdir -p "${workdir}/server"
-chmod 0777 "${workdir}/server"
+mkdir -p "${workdir}/Server"
+chmod 0777 "${workdir}/Server"
 : > "${workdir}/Assets.zip"
-: > "${workdir}/server/HytaleServer.jar"
+: > "${workdir}/Server/HytaleServer.jar"
 set +e
 out="$(docker run --rm -e ENABLE_AOT=true -v "${workdir}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
@@ -104,10 +104,10 @@ rm -rf "${workdir2}"
 # Test 4b: auto-update is enabled by default when files are present
 workdir2b="$(mktemp -d)"
 chmod 0777 "${workdir2b}"
-mkdir -p "${workdir2b}/server"
-chmod 0777 "${workdir2b}/server"
+mkdir -p "${workdir2b}/Server"
+chmod 0777 "${workdir2b}/Server"
 : > "${workdir2b}/Assets.zip"
-: > "${workdir2b}/server/HytaleServer.jar"
+: > "${workdir2b}/Server/HytaleServer.jar"
 set +e
 out="$(docker run --rm \
   -e HYTALE_AUTO_DOWNLOAD=true \
@@ -125,10 +125,10 @@ rm -rf "${workdir2b}"
 # Test 4c: auto-update can be disabled via HYTALE_AUTO_UPDATE=false
 workdir2c="$(mktemp -d)"
 chmod 0777 "${workdir2c}"
-mkdir -p "${workdir2c}/server"
-chmod 0777 "${workdir2c}/server"
+mkdir -p "${workdir2c}/Server"
+chmod 0777 "${workdir2c}/Server"
 : > "${workdir2c}/Assets.zip"
-: > "${workdir2c}/server/HytaleServer.jar"
+: > "${workdir2c}/Server/HytaleServer.jar"
 set +e
 out="$(docker run --rm \
   -e HYTALE_AUTO_DOWNLOAD=true \
@@ -190,7 +190,7 @@ rm -rf "${workdir4}"
 
 # Test 7: tokens must never be logged as values
 TOKEN_VALUE="super-secret-token"
-: > "${workdir}/server/HytaleServer.aot" || true
+: > "${workdir}/Server/HytaleServer.aot" || true
 set +e
 out="$(docker run --rm \
   -e HYTALE_SERVER_SESSION_TOKEN="${TOKEN_VALUE}" \
@@ -208,10 +208,10 @@ pass "token values are not logged"
 # Test 8: machine-id is generated and persisted
 workdir5="$(mktemp -d)"
 chmod 0777 "${workdir5}"
-mkdir -p "${workdir5}/server"
-chmod 0777 "${workdir5}/server"
+mkdir -p "${workdir5}/Server"
+chmod 0777 "${workdir5}/Server"
 : > "${workdir5}/Assets.zip"
-: > "${workdir5}/server/HytaleServer.jar"
+: > "${workdir5}/Server/HytaleServer.jar"
 set +e
 out="$(docker run --rm -v "${workdir5}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
@@ -256,8 +256,8 @@ rm -rf "${workdir5}"
 # Note: We can't use :ro mount because Docker's WORKDIR fails before entrypoint runs.
 # Instead, create a directory owned by root that the container user (1000) cannot write to.
 workdir6="$(mktemp -d)"
-mkdir -p "${workdir6}/server"
-chmod 0777 "${workdir6}/server"
+mkdir -p "${workdir6}/Server"
+chmod 0777 "${workdir6}/Server"
 chmod 0555 "${workdir6}"
 set +e
 out="$(docker run --rm -v "${workdir6}:/home/container" "${IMAGE_NAME}" 2>&1)"
@@ -270,30 +270,30 @@ pass "permission check fails when /home/container is not writable"
 chmod 0755 "${workdir6}"
 rm -rf "${workdir6}"
 
-# Test 10: permission check fails when /home/container/server exists but is not writable
+# Test 10: permission check fails when /home/container/Server exists but is not writable
 workdir7="$(mktemp -d)"
 chmod 0777 "${workdir7}"
-mkdir -p "${workdir7}/server"
-chmod 0555 "${workdir7}/server"
+mkdir -p "${workdir7}/Server"
+chmod 0555 "${workdir7}/Server"
 set +e
 out="$(docker run --rm -v "${workdir7}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
-[ ${status} -ne 0 ] || fail "expected non-zero exit status when /home/container/server is not writable"
-echo "${out}" | grep -q "Cannot write to /home/container/server" || fail "expected /home/container/server not writable error"
+[ ${status} -ne 0 ] || fail "expected non-zero exit status when /home/container/Server is not writable"
+echo "${out}" | grep -q "Cannot write to /home/container/Server" || fail "expected /home/container/Server not writable error"
 echo "${out}" | grep -q "Current owner:" || fail "expected current owner info in error"
 echo "${out}" | grep -q "troubleshooting.md" || fail "expected troubleshooting docs link"
-pass "permission check fails when /home/container/server is not writable"
-chmod 0755 "${workdir7}/server"
+pass "permission check fails when /home/container/Server is not writable"
+chmod 0755 "${workdir7}/Server"
 rm -rf "${workdir7}"
 
 # Test 11: read-only root filesystem does not cause machine-id error output
 workdir8="$(mktemp -d)"
 chmod 0777 "${workdir8}"
-mkdir -p "${workdir8}/server"
-chmod 0777 "${workdir8}/server"
+mkdir -p "${workdir8}/Server"
+chmod 0777 "${workdir8}/Server"
 : > "${workdir8}/Assets.zip"
-: > "${workdir8}/server/HytaleServer.jar"
+: > "${workdir8}/Server/HytaleServer.jar"
 set +e
 out="$(docker run --rm --read-only --tmpfs /tmp -v "${workdir8}:/home/container" "${IMAGE_NAME}" 2>&1)"
 status=$?
