@@ -127,7 +127,7 @@ mkdir -p "${SERVER_DIR}"
 check_dir_writable "${SERVER_DIR}"
 
 setup_machine_id() {
-  MACHINE_ID_FILE="/etc/machine-id"
+  MACHINE_ID_FILE="${DATA_DIR}/.machine-id"
   MACHINE_ID_PERSISTENT="${DATA_DIR}/.machine-id"
 
   if [ -n "${HYTALE_MACHINE_ID}" ]; then
