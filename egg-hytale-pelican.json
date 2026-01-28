@@ -1,243 +1,387 @@
 {
-    "_comment": "Pelican Panel Egg for Hytale Server (Pelican-Optimized Fork)",
+    "_comment": "Pelican Panel Egg for Hybrowse Hytale Server - COMPLETE VERSION",
     "meta": {
-        "version": "PLCN_v1.0",
+        "version": "PLCN_v3",
         "update_url": null
     },
-    "exported_at": "2026-01-27T00:00:00+00:00",
-    "name": "Hytale Server (Pelican)",
+    "exported_at": "2026-01-26T00:00:00+00:00",
+    "name": "Hytale Pelican",
     "author": "scotthowson",
-    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "description": "Production-ready Hytale server powered by scotthowson's Pelican-optimized fork.\n\n✨ FEATURES:\n• Automatic server file downloads with smart update detection\n• Built-in CurseForge mod management\n• Automatic backups with configurable retention\n• Professional security defaults\n• Optimized for Pelican Panel (no config needed!)\n\n🔐 AUTHENTICATION REQUIRED (Two Steps):\n\nSTEP 1 - Downloader Auth (First Start Only):\n  1. Start your server\n  2. Watch console for device code URL\n  3. Visit URL and enter the code\n  4. Files download automatically\n  5. Credentials saved for future starts\n\nSTEP 2 - Server Auth (After Server Boots):\n  1. Open console\n  2. Run: /auth persistence Encrypted\n  3. Run: /auth login device\n  4. Visit URL + enter device code\n  5. If multiple profiles: /auth select <number>\n  6. Verify: /auth status\n\n✅ After both steps, players can connect!\n\n🌐 Port: UDP 5520 (QUIC protocol)\n📚 Docs: https://github.com/scotthowson/hytale-server-pelican\n\nBased on Hybrowse's excellent work: https://github.com/Hybrowse/hytale-server-docker",
-    "features": null,
+    "uuid": "8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d",
+    "description": "Production-ready Hytale server powered by Hybrowse's Docker image.\n\nFeatures:\n• Automatic downloads with smart update detection\n• Built-in CurseForge mod management\n• Automatic backups\n• Security-first design\n\nAUTHENTICATION REQUIRED:\n1. First start: Watch console for device code URL (downloader auth)\n2. After server starts: Use console commands for server auth\n   - /auth persistence Encrypted\n   - /auth login device\n   - Follow URL + device code\n   - /auth select <number> (if multiple profiles)\n   - /auth status (to verify)\n\nDocs: https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/quickstart.md",
+    "tags": [
+        "hytale",
+        "hybrowse",
+        "quic"
+    ],
+    "features": [],
     "docker_images": {
-        "Hytale (Pelican-Optimized)": "ghcr.io/scotthowson/hytale-server-pelican:latest"
+        "Hytale Pelican": "ghcr.io/scotthowson/hytale-server-pelican:latest"
     },
     "file_denylist": [],
-    "startup": "",
+    "startup": {
+        "done": "Hytale Server Booted!",
+        "user_interaction": [
+            "Please visit",
+            "Enter the code",
+            "/auth"
+        ],
+        "strip_ansi": false
+    },
+    "startup_commands": {
+        "Default": "/usr/bin/tini -- /usr/local/bin/hytale-entrypoint"
+    },
     "config": {
         "files": "{}",
         "startup": "{\n    \"done\": \"Hytale Server Booted!\",\n    \"user_interaction\": [\n        \"Please visit\",\n        \"Enter the code\",\n        \"/auth\"\n    ]\n}",
         "logs": "{}",
-        "stop": "^C"
+        "stop": "^C",
+        "mounts": {
+            "default": {
+                "source": "/home/container",
+                "target": "/data",
+                "read_only": false
+            }
+        }
     },
     "scripts": {
         "installation": {
-            "script": "#!/bin/bash\nset -e\n\ncd /mnt/server\n\ncat << 'EOF'\n\n==========================================\n  Hytale Server - Pelican Panel\n==========================================\n\nThis egg uses scotthowson's Pelican-optimized\nfork of the Hybrowse Docker image.\n\nThe image handles:\n  ✓ Automatic Hytale server file downloads\n  ✓ Smart update detection\n  ✓ CurseForge mod management (optional)\n  ✓ Automatic backups (optional)\n  ✓ Pelican Panel compatibility\n\nDocker Image:\n  ghcr.io/scotthowson/hytale-server-pelican:latest\n\nGitHub:\n  https://github.com/scotthowson/hytale-server-pelican\n\n==========================================\n  Installation Complete!\n==========================================\n\nYour server is ready to start.\n\n==========================================\n  AUTHENTICATION REQUIRED\n==========================================\n\nHytale requires TWO authentication steps:\n\n📝 STEP 1: Downloader Authentication\n    (First Start Only)\n\n  1. Start your server\n  2. Watch the console output\n  3. You'll see: \"Please visit https://...\"\n     with a device code\n  4. Open the URL in your browser\n  5. Enter the device code\n  6. Server downloads files automatically\n  7. Credentials saved for future starts\n\n📝 STEP 2: Server Authentication\n    (After Server Boots)\n\n  1. Once server fully boots, open console\n  2. Run these commands:\n\n     /auth persistence Encrypted\n     /auth login device\n\n  3. You'll see another URL + device code\n  4. Visit URL and enter the code\n  5. If multiple profiles:\n     /auth select <number>\n  6. Verify authentication:\n     /auth status\n\n✅ After BOTH steps, players can connect!\n\n==========================================\n  Server Details\n==========================================\n\nProtocol: QUIC over UDP\nPort: 5520 (must be UDP in Pelican)\nMemory: Configure via variables below\n\nDocumentation:\n  https://github.com/scotthowson/hytale-server-pelican\n  https://github.com/Hybrowse/hytale-server-docker\n\n==========================================\n\nEOF",
+            "script": "#!/bin/bash\n##\n## Hybrowse Hytale Server - Installation Script for Pelican Panel\n##\nset -e\n\ncd /mnt/server\n\necho \"\"\necho \"===========================================\"\necho \"  Hybrowse Hytale Server - Installation\"\necho \"===========================================\"\necho \"\"\necho \"Setting up directory permissions...\"\necho \"  Container UID: 1000 (hytale user)\"\necho \"\"\n\n# Hybrowse container runs as UID 1000\n# Pelican typically runs containers as a different UID\n# We need to ensure the directory is writable by UID 1000\nchown -R 1000:1000 /mnt/server || echo \"Note: Could not set ownership to 1000:1000 (may require admin)\"\nchmod -R 755 /mnt/server\n\necho \"\"\necho \"This egg uses the Hybrowse Docker image which handles:\"\necho \"  ✓ Automatic server file downloads\"\necho \"  ✓ Smart update detection (downloads only when needed)\"\necho \"  ✓ CurseForge mod management (optional)\"\necho \"  ✓ Automatic backups (optional)\"\necho \"\"\necho \"Installation complete!\"\necho \"\"\necho \"===========================================\"\necho \"  IMPORTANT: Two-Step Authentication\"\necho \"===========================================\"\necho \"\"\necho \"STEP 1: Downloader Authentication (First Start)\"\necho \"  - Start your server and watch the console\"\necho \"  - You'll see a URL and device code\"\necho \"  - Visit the URL and enter the code\"\necho \"  - Download will proceed automatically\"\necho \"  - Credentials stored for future starts\"\necho \"\"\necho \"STEP 2: Server Authentication (After Startup)\"\necho \"  - Once server boots, open the console\"\necho \"  - Run: /auth persistence Encrypted\"\necho \"  - Run: /auth login device\"\necho \"  - Follow the URL + device code shown\"\necho \"  - If multiple profiles: /auth select <number>\"\necho \"  - Verify with: /auth status\"\necho \"\"\necho \"After both steps, players can connect!\"\necho \"\"\necho \"Documentation:\"\necho \"  https://github.com/Hybrowse/hytale-server-docker\"\necho \"===========================================\"\necho \"\"",
             "container": "ghcr.io/pelican-eggs/installers:debian",
             "entrypoint": "bash"
         }
     },
     "variables": [
         {
-            "name": "Auto Download",
-            "description": "Automatically download Hytale server files on first run using the official Hytale Downloader. Requires device code authentication on first start (watch console).",
+            "name": "Auto Download Server Files",
+            "description": "Automatically download Hytale server files on first run using the official Hytale Downloader. Requires authentication via device code on first start.",
             "env_variable": "HYTALE_AUTO_DOWNLOAD",
             "default_value": "true",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:true,false"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 1
         },
         {
             "name": "Auto Update",
-            "description": "Check for server updates on each startup. Only downloads when updates are available.",
+            "description": "Check for server updates on startup. Downloads only when updates are available.",
             "env_variable": "HYTALE_AUTO_UPDATE",
             "default_value": "true",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:true,false"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 2
         },
         {
             "name": "Server Port",
             "description": "UDP port for Hytale server (QUIC protocol). Must match your Pelican allocation.",
-            "env_variable": "HYTALE_BIND",
-            "default_value": "0.0.0.0:{{server.build.default.port}}",
+            "env_variable": "HYTALE_PORT",
+            "default_value": "5520",
             "user_viewable": true,
             "user_editable": false,
-            "rules": ["required", "string"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "integer",
+                "between:1024,65535"
+            ],
+            "sort": 3
         },
         {
-            "name": "Max Memory",
-            "description": "Maximum JVM heap size (e.g., 4G, 8G, 16G). This is your server's main memory allocation.",
-            "env_variable": "JVM_XMX",
+            "name": "JVM Min Memory",
+            "description": "Minimum JVM heap size (e.g., 2G, 4G). Leave empty to omit -Xms flag.",
+            "env_variable": "HYTALE_JVM_XMS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "nullable",
+                "string"
+            ],
+            "sort": 4
+        },
+        {
+            "name": "JVM Max Memory",
+            "description": "Maximum JVM heap size (e.g., 4G, 8G, 16G). This is your main memory allocation.",
+            "env_variable": "HYTALE_JVM_XMX",
             "default_value": "4G",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "max:20"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "max:20"
+            ],
+            "sort": 5
         },
         {
-            "name": "Min Memory",
-            "description": "Minimum JVM heap size. Usually set to same as max for consistent performance.",
-            "env_variable": "JVM_XMS",
-            "default_value": "2G",
+            "name": "JVM Extra Arguments",
+            "description": "Additional JVM arguments for advanced tuning. Leave empty for defaults.",
+            "env_variable": "HYTALE_JVM_ARGS",
+            "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["nullable", "string", "max:20"],
-            "field_type": "text"
+            "rules": [
+                "nullable",
+                "string"
+            ],
+            "sort": 6
+        },
+        {
+            "name": "Use AOT Cache",
+            "description": "Use Ahead-Of-Time compilation cache for faster startup. Recommended: true",
+            "env_variable": "HYTALE_USE_AOT",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 7
         },
         {
             "name": "Server Name",
-            "description": "Display name for your Hytale server.",
+            "description": "Display name for your Hytale server",
             "env_variable": "HYTALE_SERVER_NAME",
-            "default_value": "A Hytale Server",
+            "default_value": "Hytale Server",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "max:255"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "max:255"
+            ],
+            "sort": 8
         },
         {
             "name": "Max Players",
-            "description": "Maximum number of concurrent players.",
+            "description": "Maximum number of concurrent players",
             "env_variable": "HYTALE_MAX_PLAYERS",
             "default_value": "20",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "integer", "between:1,100"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "integer",
+                "between:1,100"
+            ],
+            "sort": 9
         },
         {
             "name": "View Distance",
-            "description": "View distance in chunks (1 chunk = 32 blocks). Default: 12 chunks = 384 blocks. Higher = more RAM.",
+            "description": "View distance in chunks (12 chunks = 384 blocks). Higher values require more RAM.",
             "env_variable": "HYTALE_VIEW_DISTANCE",
             "default_value": "12",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "integer", "between:4,32"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "integer",
+                "between:4,32"
+            ],
+            "sort": 10
         },
         {
             "name": "Authentication Mode",
-            "description": "Server authentication. 'authenticated' requires valid Hytale account (recommended). 'unauthenticated' allows any username (testing only).",
+            "description": "Server authentication mode. AUTHENTICATED requires player authentication. OFFLINE allows anyone to join. INSECURE is for testing only.",
             "env_variable": "HYTALE_AUTH_MODE",
             "default_value": "authenticated",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:authenticated,unauthenticated"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:authenticated,offline,insecure"
+            ],
+            "sort": 11
         },
         {
             "name": "Enable Backups",
-            "description": "Enable automatic world backups. Backups saved to /home/container/backups/",
+            "description": "Enable automatic server backups",
             "env_variable": "HYTALE_ENABLE_BACKUP",
             "default_value": "false",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:true,false"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 12
         },
         {
             "name": "Backup Frequency (Minutes)",
-            "description": "How often to create backups (in minutes). Only used if backups enabled.",
+            "description": "How often to create backups. Only applies if backups are enabled.",
             "env_variable": "HYTALE_BACKUP_FREQUENCY_MINUTES",
             "default_value": "60",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["nullable", "integer", "min:1"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "integer",
+                "min:5",
+                "max:1440"
+            ],
+            "sort": 13
         },
         {
             "name": "Backup Retention Count",
-            "description": "Max number of backup archives to keep. Older backups deleted. Only used if backups enabled.",
-            "env_variable": "HYTALE_BACKUP_MAX_COUNT",
+            "description": "Maximum number of backups to keep. Oldest backups are automatically deleted.",
+            "env_variable": "HYTALE_BACKUP_RETENTION_COUNT",
             "default_value": "5",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["nullable", "integer", "min:1"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "integer",
+                "between:1,100"
+            ],
+            "sort": 14
+        },
+        {
+            "name": "Backup Directory",
+            "description": "Directory path for backups (inside container). Default is /data/backups",
+            "env_variable": "HYTALE_BACKUP_DIR",
+            "default_value": "/home/container/backups",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string"
+            ],
+            "sort": 15
         },
         {
             "name": "CurseForge Mods",
-            "description": "Space or newline-separated list of CurseForge mod IDs or ID:FileID pairs.\n\nExamples:\n• 123456 (latest version)\n• 123456:3456789 (specific file)\n• Multiple: 123456 234567 345678\n\nRequires API key below.",
+            "description": "Space or newline-separated list of CurseForge mod IDs or ID:FileID pairs.\n\nExamples:\n• 123456 (latest version of mod)\n• 123456:3456789 (specific file)\n• Multiple: 123456 234567 345678",
             "env_variable": "HYTALE_CURSEFORGE_MODS",
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["nullable", "string"],
-            "field_type": "text"
+            "rules": [
+                "nullable",
+                "string"
+            ],
+            "sort": 16
         },
         {
             "name": "CurseForge API Key",
-            "description": "Your CurseForge API key for mod downloads.\nGet one at: https://console.curseforge.com/\n\nRequired if using CurseForge mods above.",
+            "description": "Your CurseForge API key for mod downloads. Get one at https://console.curseforge.com/\n\nNOTE: If key starts with $2a$10$, you'll need to escape it in some contexts.",
             "env_variable": "HYTALE_CURSEFORGE_API_KEY",
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["nullable", "string"],
-            "field_type": "text"
+            "rules": [
+                "nullable",
+                "string"
+            ],
+            "sort": 17
         },
         {
-            "name": "CurseForge Auto Update",
-            "description": "Automatically update CurseForge mods on server start.",
+            "name": "CurseForge Auto Update Mods",
+            "description": "Automatically check for and download mod updates on server startup",
             "env_variable": "HYTALE_CURSEFORGE_AUTO_UPDATE",
             "default_value": "true",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:true,false"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 18
         },
         {
             "name": "CurseForge Release Channel",
-            "description": "Which CurseForge release channel to use for mod updates.",
+            "description": "Which release channels to accept for mod downloads",
             "env_variable": "HYTALE_CURSEFORGE_RELEASE_CHANNEL",
             "default_value": "release",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:release,beta,alpha"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:release,beta,alpha,any"
+            ],
+            "sort": 19
         },
         {
-            "name": "Disable Sentry",
-            "description": "Disable Sentry error reporting to Hypixel Studios. Enable for privacy.",
-            "env_variable": "HYTALE_DISABLE_SENTRY",
-            "default_value": "false",
+            "name": "CurseForge Game Version Filter",
+            "description": "Filter mods by game version (optional). Leave empty to accept all versions.",
+            "env_variable": "HYTALE_CURSEFORGE_GAME_VERSION",
+            "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:true,false"],
-            "field_type": "text"
-        },
-        {
-            "name": "Enable AOT Cache",
-            "description": "Enable Ahead-of-Time compilation cache for faster startup. First start slower while cache generates. Recommended: auto",
-            "env_variable": "ENABLE_AOT",
-            "default_value": "auto",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": ["required", "string", "in:auto,true,false,generate"],
-            "field_type": "text"
+            "rules": [
+                "nullable",
+                "string"
+            ],
+            "sort": 20
         },
         {
             "name": "Allow Self-Op",
-            "description": "Allow server owner to use /op command. Not recommended for production servers.",
-            "env_variable": "HYTALE_ALLOW_OP",
+            "description": "Allow players to use /op command to give themselves operator permissions. WARNING: This grants full admin access!",
+            "env_variable": "HYTALE_ALLOW_SELF_OP",
             "default_value": "false",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:true,false"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 21
         },
         {
             "name": "Validate Assets",
-            "description": "Validate Assets.zip on startup. Increases startup time but ensures integrity.",
+            "description": "Exit with error if server assets are invalid. Useful for catching corruption.",
             "env_variable": "HYTALE_VALIDATE_ASSETS",
             "default_value": "false",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:true,false"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 22
         },
         {
-            "name": "Debug Mode",
-            "description": "Enable debug logging. Useful for troubleshooting but very verbose.",
+            "name": "Validate World Generation",
+            "description": "Exit with error if world generation config is invalid",
+            "env_variable": "HYTALE_VALIDATE_WORLD_GEN",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 23
+        },
+        {
+            "name": "Debug Logging",
+            "description": "Enable debug-level logging for troubleshooting",
             "env_variable": "HYTALE_DEBUG",
             "default_value": "false",
             "user_viewable": true,
             "user_editable": true,
-            "rules": ["required", "string", "in:true,false"],
-            "field_type": "text"
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ],
+            "sort": 24
         }
     ]
 }
