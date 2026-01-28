@@ -154,19 +154,19 @@ setup_machine_id() {
   fi
 
   # Try to write to /etc/machine-id (primary location Java checks)
-  # Suppress warnings if we successfully write to persistent storage (read-only root FS is OK)
+  # Suppress ALL output including shell errors on read-only filesystem
   wrote_etc=0
   wrote_persistent=0
   
-  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" 2>/dev/null; then
+  if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" ) >/dev/null 2>&1; then
     wrote_etc=1
   fi
   
   # Write to /var/lib/dbus/machine-id (secondary location)
-  printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" 2>/dev/null || true
+  ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" ) >/dev/null 2>&1 || true
   
   # Write to persistent storage
-  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null; then
+  if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" ) >/dev/null 2>&1; then
     wrote_persistent=1
   fi
   
