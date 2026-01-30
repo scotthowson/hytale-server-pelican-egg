@@ -20,21 +20,57 @@ DATA_DIR="${DATA_DIR:-/home/container}"
 SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 
 # ============================================================================
-# MACHINE ID / HARDWARE UUID SETUP
+# PELICAN PANEL VARIABLE MAPPING
 # ============================================================================
-# The Hytale server's HardwareUtil.java tries to get a unique hardware identifier
-# for authentication persistence. In containers, the standard methods fail:
-#   - dmidecode requires root and real hardware
-#   - /sys/class/dmi/id/product_uuid requires host access
-#   - /etc/machine-id may be ephemeral in some container runtimes
-#
-# Our solution:
-#   1. Store a persistent machine-id in the data volume
-#   2. Provide a fake dmidecode that returns the same UUID
-#   3. Pass the UUID as Java system properties
-#   4. Write to /etc/machine-id if possible (some Java code reads this)
+# Map Pelican egg variable names to what this entrypoint expects.
+# This allows the egg to use user-friendly names while maintaining
+# compatibility with the existing entrypoint logic.
 # ============================================================================
 
+# JVM Memory settings - Pelican uses HYTALE_JVM_*, entrypoint uses JVM_*
+if [ -n "${HYTALE_JVM_XMS:-}" ] && [ -z "${JVM_XMS:-}" ]; then
+  JVM_XMS="${HYTALE_JVM_XMS}"
+  export JVM_XMS
+fi
+
+if [ -n "${HYTALE_JVM_XMX:-}" ] && [ -z "${JVM_XMX:-}" ]; then
+  JVM_XMX="${HYTALE_JVM_XMX}"
+  export JVM_XMX
+fi
+
+# JVM Extra args - Pelican uses HYTALE_JVM_ARGS, entrypoint uses JVM_EXTRA_ARGS
+if [ -n "${HYTALE_JVM_ARGS:-}" ] && [ -z "${JVM_EXTRA_ARGS:-}" ]; then
+  JVM_EXTRA_ARGS="${HYTALE_JVM_ARGS}"
+  export JVM_EXTRA_ARGS
+fi
+
+# AOT setting - Pelican uses HYTALE_USE_AOT, entrypoint uses ENABLE_AOT
+if [ -n "${HYTALE_USE_AOT:-}" ] && [ -z "${ENABLE_AOT:-}" ]; then
+  ENABLE_AOT="${HYTALE_USE_AOT}"
+  export ENABLE_AOT
+fi
+
+# Port binding - Pelican uses HYTALE_PORT, entrypoint uses HYTALE_BIND
+if [ -n "${HYTALE_PORT:-}" ] && [ -z "${HYTALE_BIND:-}" ]; then
+  HYTALE_BIND="0.0.0.0:${HYTALE_PORT}"
+  export HYTALE_BIND
+fi
+
+# Backup retention - Pelican uses HYTALE_BACKUP_RETENTION_COUNT, entrypoint uses HYTALE_BACKUP_MAX_COUNT
+if [ -n "${HYTALE_BACKUP_RETENTION_COUNT:-}" ] && [ -z "${HYTALE_BACKUP_MAX_COUNT:-}" ]; then
+  HYTALE_BACKUP_MAX_COUNT="${HYTALE_BACKUP_RETENTION_COUNT}"
+  export HYTALE_BACKUP_MAX_COUNT
+fi
+
+# Allow OP - Pelican uses HYTALE_ALLOW_SELF_OP, entrypoint uses HYTALE_ALLOW_OP
+if [ -n "${HYTALE_ALLOW_SELF_OP:-}" ] && [ -z "${HYTALE_ALLOW_OP:-}" ]; then
+  HYTALE_ALLOW_OP="${HYTALE_ALLOW_SELF_OP}"
+  export HYTALE_ALLOW_OP
+fi
+
+# ============================================================================
+# MACHINE ID / HARDWARE UUID SETUP
+# ============================================================================
 setup_machine_id() {
   MACHINE_ID_PERSISTENT="${DATA_DIR}/.machine-id"
   HARDWARE_UUID_PERSISTENT="${DATA_DIR}/.hardware-uuid"
@@ -43,13 +79,11 @@ setup_machine_id() {
   
   machine_id=""
   
-  # Priority 1: Explicit environment variable
   if [ -n "${HYTALE_MACHINE_ID:-}" ]; then
     machine_id="${HYTALE_MACHINE_ID}"
     log "Using HYTALE_MACHINE_ID from environment"
   fi
   
-  # Priority 2: Persistent file in data volume
   if [ -z "${machine_id}" ] && [ -f "${MACHINE_ID_PERSISTENT}" ]; then
     machine_id="$(cat "${MACHINE_ID_PERSISTENT}" 2>/dev/null | tr -d '[:space:]' || true)"
     if [ "${#machine_id}" -eq 32 ]; then
@@ -59,7 +93,6 @@ setup_machine_id() {
     fi
   fi
   
-  # Priority 3: Generate new machine-id
   if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
     if command -v uuidgen >/dev/null 2>&1; then
       machine_id="$(uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]')"
@@ -69,14 +102,12 @@ setup_machine_id() {
     log "Generated new machine-id"
   fi
   
-  # Validate
   if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
     log "ERROR: Failed to generate a valid 32-character machine-id"
     log "ERROR: Got: '${machine_id}' (length: ${#machine_id})"
     exit 1
   fi
   
-  # Generate UUID format (8-4-4-4-12) from machine-id
   hardware_uuid="$(printf '%s-%s-%s-%s-%s' \
     "$(printf '%s' "${machine_id}" | cut -c1-8 | tr '[:lower:]' '[:upper:]')" \
     "$(printf '%s' "${machine_id}" | cut -c9-12 | tr '[:lower:]' '[:upper:]')" \
@@ -84,7 +115,6 @@ setup_machine_id() {
     "$(printf '%s' "${machine_id}" | cut -c17-20 | tr '[:lower:]' '[:upper:]')" \
     "$(printf '%s' "${machine_id}" | cut -c21-32 | tr '[:lower:]' '[:upper:]')")"
   
-  # Persist to data volume (critical for auth persistence across restarts)
   wrote_persistent=0
   if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" ) >/dev/null 2>&1; then
     chmod 644 "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
@@ -95,14 +125,12 @@ setup_machine_id() {
     chmod 644 "${HARDWARE_UUID_PERSISTENT}" 2>/dev/null || true
   fi
   
-  # Try to write to system locations (may fail in read-only containers)
   wrote_etc=0
   if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" ) >/dev/null 2>&1; then
     wrote_etc=1
   fi
   ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" ) >/dev/null 2>&1 || true
   
-  # Report status (don't log actual values for security)
   if [ "${wrote_persistent}" -eq 1 ]; then
     log "Machine-ID persisted to ${MACHINE_ID_PERSISTENT}"
   elif [ "${wrote_etc}" -eq 1 ]; then
@@ -112,14 +140,13 @@ setup_machine_id() {
     log "WARNING: Authentication may not persist across container restarts"
   fi
   
-  # Export for use by fake-dmidecode and Java
   export HYTALE_RUNTIME_MACHINE_ID="${machine_id}"
   export HYTALE_HARDWARE_UUID="${hardware_uuid}"
 }
 
 setup_machine_id
 
-# Auto-load server tokens from persistent file if not already set
+# Auto-load server tokens
 HYTALE_SERVER_TOKENS_FILE="${HYTALE_SERVER_TOKENS_FILE:-${DATA_DIR}/.hytale-server-tokens}"
 if [ -f "${HYTALE_SERVER_TOKENS_FILE}" ]; then
   if [ -z "${HYTALE_SERVER_SESSION_TOKEN:-}" ]; then
@@ -206,16 +233,7 @@ HYTALE_JAVA_TERMINAL_PROPS="${HYTALE_JAVA_TERMINAL_PROPS:-true}"
 HYTALE_CURSEFORGE_MODS="${HYTALE_CURSEFORGE_MODS:-}"
 
 HYTALE_UNIVERSE_DOWNLOAD_URLS="${HYTALE_UNIVERSE_DOWNLOAD_URLS:-}"
-HYTALE_UNIVERSE_DOWNLOAD_PATH="${HYTALE_UNIVERSE_DOWNLOAD_PATH:-}"
-HYTALE_UNIVERSE_DOWNLOAD_LIMIT_RATE="${HYTALE_UNIVERSE_DOWNLOAD_LIMIT_RATE:-}"
-HYTALE_UNIVERSE_DOWNLOAD_FORCE="${HYTALE_UNIVERSE_DOWNLOAD_FORCE:-false}"
-HYTALE_UNIVERSE_DOWNLOAD_FAIL_ON_ERROR="${HYTALE_UNIVERSE_DOWNLOAD_FAIL_ON_ERROR:-true}"
-
 HYTALE_MODS_DOWNLOAD_URLS="${HYTALE_MODS_DOWNLOAD_URLS:-}"
-HYTALE_MODS_DOWNLOAD_PATH="${HYTALE_MODS_DOWNLOAD_PATH:-}"
-HYTALE_MODS_DOWNLOAD_LIMIT_RATE="${HYTALE_MODS_DOWNLOAD_LIMIT_RATE:-}"
-HYTALE_MODS_DOWNLOAD_FORCE="${HYTALE_MODS_DOWNLOAD_FORCE:-false}"
-HYTALE_MODS_DOWNLOAD_FAIL_ON_ERROR="${HYTALE_MODS_DOWNLOAD_FAIL_ON_ERROR:-true}"
 
 ENABLE_AOT="${ENABLE_AOT:-auto}"
 
@@ -350,7 +368,6 @@ fi
 set -- java
 
 # Enable native access for Netty and other libraries (Java 21+)
-# This suppresses warnings about restricted method calls
 set -- "$@" "--enable-native-access=ALL-UNNAMED"
 
 if [ -n "${JVM_XMS:-}" ]; then
@@ -365,39 +382,28 @@ if [ -n "${TZ:-}" ]; then
   set -- "$@" "-Duser.timezone=${TZ}"
 fi
 
-# ============================================================================
-# HARDWARE UUID JAVA PROPERTIES
-# ============================================================================
-# Pass the machine-id/hardware-uuid to Java through multiple system properties.
-# Different versions of HardwareUtil.java may check different property names.
-# ============================================================================
+# Hardware UUID Java properties
 if [ -n "${HYTALE_RUNTIME_MACHINE_ID:-}" ]; then
-  # Standard machine-id format (32 hex chars, no dashes)
   set -- "$@" "-Dmachine.id=${HYTALE_RUNTIME_MACHINE_ID}"
   set -- "$@" "-Djna.platform.uuid=${HYTALE_RUNTIME_MACHINE_ID}"
 fi
 
 if [ -n "${HYTALE_HARDWARE_UUID:-}" ]; then
-  # UUID format with dashes (8-4-4-4-12)
   set -- "$@" "-Dhardware.uuid=${HYTALE_HARDWARE_UUID}"
   set -- "$@" "-Dsystem.uuid=${HYTALE_HARDWARE_UUID}"
   set -- "$@" "-Djna.system.uuid=${HYTALE_HARDWARE_UUID}"
-  # Some implementations look for this specific property
   set -- "$@" "-Dcom.sun.management.jmxremote.machine.id=${HYTALE_HARDWARE_UUID}"
 fi
 
 aot_generate=0
 
-# Validate AOT cache compatibility with current JVM
-# The cache becomes invalid when JVM is updated or modules change
+# AOT cache validation
 validate_aot_cache() {
   aot_file="$1"
   if [ ! -f "${aot_file}" ]; then
     return 1
   fi
-  
-  # Quick validation: try to use the cache with a simple java command
-  # If it fails, the cache is incompatible
+  # Validate by running java -version with the cache
   if java -XX:AOTCache="${aot_file}" -XX:AOTMode=auto -version >/dev/null 2>&1; then
     return 0
   else
@@ -627,9 +633,6 @@ if is_true "${HYTALE_CONSOLE_PIPE}"; then
     chmod 0600 "${CONSOLE_FIFO}" 2>/dev/null || true
   fi
 
-  # Keep the FIFO open for both reading and writing.
-  # We also forward stdin into the FIFO so interactive attaches (docker/kubectl)
-  # keep working while still allowing hytale-cli to inject commands via the FIFO.
   exec 4<&0
   exec 3<> "${CONSOLE_FIFO}"
   (
