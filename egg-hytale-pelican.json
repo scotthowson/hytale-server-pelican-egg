@@ -160,7 +160,7 @@
             "rules": [
                 "required",
                 "string",
-                "in:true,false"
+                "in:true,false,generate"
             ],
             "sort": 7
         },
@@ -182,7 +182,7 @@
             "name": "Max Players",
             "description": "Maximum number of concurrent players",
             "env_variable": "HYTALE_MAX_PLAYERS",
-            "default_value": "20",
+            "default_value": "16",
             "user_viewable": true,
             "user_editable": true,
             "rules": [
