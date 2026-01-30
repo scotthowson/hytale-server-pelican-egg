@@ -87,12 +87,12 @@ setup_machine_id() {
   # Persist to data volume (critical for auth persistence across restarts)
   wrote_persistent=0
   if printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null; then
-    chmod 600 "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
+    chmod 644 "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
     wrote_persistent=1
   fi
   
   if printf '%s\n' "${hardware_uuid}" > "${HARDWARE_UUID_PERSISTENT}" 2>/dev/null; then
-    chmod 600 "${HARDWARE_UUID_PERSISTENT}" 2>/dev/null || true
+    chmod 644 "${HARDWARE_UUID_PERSISTENT}" 2>/dev/null || true
   fi
   
   # Try to write to system locations (may fail in read-only containers)
