@@ -349,6 +349,10 @@ fi
 # Build Java arguments
 set -- java
 
+# Enable native access for Netty and other libraries (Java 21+)
+# This suppresses warnings about restricted method calls
+set -- "$@" "--enable-native-access=ALL-UNNAMED"
+
 if [ -n "${JVM_XMS:-}" ]; then
   set -- "$@" "-Xms${JVM_XMS}"
 fi
@@ -384,6 +388,23 @@ fi
 
 aot_generate=0
 
+# Validate AOT cache compatibility with current JVM
+# The cache becomes invalid when JVM is updated or modules change
+validate_aot_cache() {
+  aot_file="$1"
+  if [ ! -f "${aot_file}" ]; then
+    return 1
+  fi
+  
+  # Quick validation: try to use the cache with a simple java command
+  # If it fails, the cache is incompatible
+  if java -XX:AOTCache="${aot_file}" -XX:AOTMode=auto -version >/dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 case "$(lower "${ENABLE_AOT}")" in
   generate|create)
     set -- "$@" "-XX:AOTCacheOutput=${HYTALE_AOT_PATH}"
@@ -392,16 +413,29 @@ case "$(lower "${ENABLE_AOT}")" in
     ;;
   auto|"")
     if [ -f "${HYTALE_AOT_PATH}" ]; then
-      set -- "$@" "-XX:AOTCache=${HYTALE_AOT_PATH}" "-XX:AOTMode=auto"
-      log "- AOT: enabled (auto)"
+      if validate_aot_cache "${HYTALE_AOT_PATH}"; then
+        set -- "$@" "-XX:AOTCache=${HYTALE_AOT_PATH}" "-XX:AOTMode=auto"
+        log "- AOT: enabled (auto)"
+      else
+        log "- AOT: cache incompatible with current JVM, removing stale cache"
+        rm -f "${HYTALE_AOT_PATH}" 2>/dev/null || true
+        log "- AOT: disabled (cache removed, regenerate with ENABLE_AOT=generate)"
+      fi
     else
       log "- AOT: disabled (auto, cache missing)"
     fi
     ;;
   true|1|yes|on)
     if [ -f "${HYTALE_AOT_PATH}" ]; then
-      set -- "$@" "-XX:AOTCache=${HYTALE_AOT_PATH}" "-XX:AOTMode=on"
-      log "- AOT: enabled"
+      if validate_aot_cache "${HYTALE_AOT_PATH}"; then
+        set -- "$@" "-XX:AOTCache=${HYTALE_AOT_PATH}" "-XX:AOTMode=on"
+        log "- AOT: enabled"
+      else
+        log "ERROR: ENABLE_AOT=true but AOT cache is incompatible with current JVM"
+        log "ERROR: Remove ${HYTALE_AOT_PATH} and regenerate with ENABLE_AOT=generate"
+        log "ERROR: Or set ENABLE_AOT=auto to automatically handle stale caches"
+        exit 1
+      fi
     else
       log "ERROR: ENABLE_AOT=true but AOT cache file does not exist: ${HYTALE_AOT_PATH}"
       log "ERROR: Generate an AOT cache (ENABLE_AOT=generate) or disable AOT (ENABLE_AOT=false)."

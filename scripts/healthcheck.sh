@@ -21,6 +21,7 @@ if is_true "${HYTALE_HEALTHCHECK_DISABLED:-false}"; then
 fi
 
 DATA_DIR="${DATA_DIR:-/home/container}"
+# Use consistent path - capital S to match entrypoint
 SERVER_DIR="${SERVER_DIR:-${DATA_DIR}/Server}"
 
 HYTALE_SERVER_JAR="${HYTALE_SERVER_JAR:-${SERVER_DIR}/HytaleServer.jar}"
