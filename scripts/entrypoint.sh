@@ -386,30 +386,60 @@ validate_aot_cache() {
 }
 
 generate_aot_cache() {
-  log "- AOT: generating cache (this may take a minute)..."
+  log "- AOT: generating cache (this may take 1-2 minutes)..."
   
-  # Build the AOT generation command
-  aot_cmd="java --enable-native-access=ALL-UNNAMED"
+  # Create a temporary file for AOT generation output
+  aot_log="${DATA_DIR}/.aot-generation.log"
   
-  if [ -n "${JVM_XMS:-}" ]; then
-    aot_cmd="${aot_cmd} -Xms${JVM_XMS}"
-  fi
-  if [ -n "${JVM_XMX:-}" ]; then
-    aot_cmd="${aot_cmd} -Xmx${JVM_XMX}"
-  fi
+  # AOT generation requires running the server in a special mode
+  # The server runs with --bare --validate-assets --shutdown-after-validate
+  # and -XX:AOTCacheOutput to create the cache file
   
-  aot_cmd="${aot_cmd} -XX:AOTCacheOutput=${HYTALE_AOT_PATH}"
-  aot_cmd="${aot_cmd} -jar ${HYTALE_SERVER_JAR}"
-  aot_cmd="${aot_cmd} --assets ${HYTALE_ASSETS_PATH}"
-  aot_cmd="${aot_cmd} --bare --validate-assets --shutdown-after-validate"
-  
-  # Run AOT generation
   cd "${SERVER_DIR}"
-  if eval "${aot_cmd}" >/dev/null 2>&1; then
+  
+  # Build command as an array for proper argument handling
+  set -- java --enable-native-access=ALL-UNNAMED
+  
+  # Add memory settings if specified
+  if [ -n "${JVM_XMX:-}" ]; then
+    set -- "$@" "-Xmx${JVM_XMX}"
+  else
+    # Default to 4G for AOT generation if not specified
+    set -- "$@" "-Xmx4G"
+  fi
+  
+  # AOT cache output path
+  set -- "$@" "-XX:AOTCacheOutput=${HYTALE_AOT_PATH}"
+  
+  # Server jar and required args
+  set -- "$@" -jar "${HYTALE_SERVER_JAR}"
+  set -- "$@" --assets "${HYTALE_ASSETS_PATH}"
+  set -- "$@" --bare
+  set -- "$@" --validate-assets
+  set -- "$@" --shutdown-after-validate
+  
+  # Run AOT generation with output captured
+  log "- AOT: running server in AOT generation mode..."
+  if "$@" > "${aot_log}" 2>&1; then
     if [ -f "${HYTALE_AOT_PATH}" ]; then
-      log "- AOT: cache generated successfully"
+      aot_size="$(wc -c < "${HYTALE_AOT_PATH}" 2>/dev/null | tr -d ' ')"
+      log "- AOT: cache generated successfully (${aot_size} bytes)"
+      rm -f "${aot_log}" 2>/dev/null || true
       return 0
+    else
+      log "- AOT: generation completed but cache file not found"
     fi
+  else
+    log "- AOT: generation process exited with error"
+  fi
+  
+  # Show the last few lines of the log on failure
+  if [ -f "${aot_log}" ]; then
+    log "- AOT: generation output (last 10 lines):"
+    tail -10 "${aot_log}" 2>/dev/null | while IFS= read -r line; do
+      log "  ${line}"
+    done
+    rm -f "${aot_log}" 2>/dev/null || true
   fi
   
   log "- AOT: cache generation failed (server will start without AOT)"
