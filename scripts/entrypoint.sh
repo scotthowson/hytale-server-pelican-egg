@@ -22,47 +22,55 @@ SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 # ============================================================================
 # PELICAN PANEL VARIABLE MAPPING
 # ============================================================================
-# Map Pelican egg variable names to what this entrypoint expects.
-# This allows the egg to use user-friendly names while maintaining
-# compatibility with the existing entrypoint logic.
-# ============================================================================
+# Convert memory value to JVM format
+# Supports: "4G", "4096M", "4096" (plain integer = MB), "0" (skip)
+normalize_memory() {
+  val="$1"
+  # Skip if empty or zero
+  case "${val}" in
+    ""|0) return 1 ;;
+  esac
+  case "${val}" in
+    *[Gg]) printf '%s' "${val}" ;;  # Already has G suffix
+    *[Mm]) printf '%s' "${val}" ;;  # Already has M suffix
+    *[0-9])
+      # Plain integer - treat as MB
+      printf '%sM' "${val}"
+      ;;
+    *) printf '%s' "${val}" ;;  # Unknown format, pass through
+  esac
+}
 
-# JVM Memory settings - Pelican uses HYTALE_JVM_*, entrypoint uses JVM_*
+# JVM Min Memory - skip if 0 or empty
 if [ -n "${HYTALE_JVM_XMS:-}" ] && [ -z "${JVM_XMS:-}" ]; then
-  JVM_XMS="${HYTALE_JVM_XMS}"
-  export JVM_XMS
+  normalized="$(normalize_memory "${HYTALE_JVM_XMS}")" && JVM_XMS="${normalized}" && export JVM_XMS
 fi
 
+# JVM Max Memory
 if [ -n "${HYTALE_JVM_XMX:-}" ] && [ -z "${JVM_XMX:-}" ]; then
-  JVM_XMX="${HYTALE_JVM_XMX}"
-  export JVM_XMX
+  normalized="$(normalize_memory "${HYTALE_JVM_XMX}")" && JVM_XMX="${normalized}" && export JVM_XMX
 fi
 
-# JVM Extra args - Pelican uses HYTALE_JVM_ARGS, entrypoint uses JVM_EXTRA_ARGS
 if [ -n "${HYTALE_JVM_ARGS:-}" ] && [ -z "${JVM_EXTRA_ARGS:-}" ]; then
   JVM_EXTRA_ARGS="${HYTALE_JVM_ARGS}"
   export JVM_EXTRA_ARGS
 fi
 
-# AOT setting - Pelican uses HYTALE_USE_AOT, entrypoint uses ENABLE_AOT
 if [ -n "${HYTALE_USE_AOT:-}" ] && [ -z "${ENABLE_AOT:-}" ]; then
   ENABLE_AOT="${HYTALE_USE_AOT}"
   export ENABLE_AOT
 fi
 
-# Port binding - Pelican uses HYTALE_PORT, entrypoint uses HYTALE_BIND
 if [ -n "${HYTALE_PORT:-}" ] && [ -z "${HYTALE_BIND:-}" ]; then
   HYTALE_BIND="0.0.0.0:${HYTALE_PORT}"
   export HYTALE_BIND
 fi
 
-# Backup retention - Pelican uses HYTALE_BACKUP_RETENTION_COUNT, entrypoint uses HYTALE_BACKUP_MAX_COUNT
 if [ -n "${HYTALE_BACKUP_RETENTION_COUNT:-}" ] && [ -z "${HYTALE_BACKUP_MAX_COUNT:-}" ]; then
   HYTALE_BACKUP_MAX_COUNT="${HYTALE_BACKUP_RETENTION_COUNT}"
   export HYTALE_BACKUP_MAX_COUNT
 fi
 
-# Allow OP - Pelican uses HYTALE_ALLOW_SELF_OP, entrypoint uses HYTALE_ALLOW_OP
 if [ -n "${HYTALE_ALLOW_SELF_OP:-}" ] && [ -z "${HYTALE_ALLOW_OP:-}" ]; then
   HYTALE_ALLOW_OP="${HYTALE_ALLOW_SELF_OP}"
   export HYTALE_ALLOW_OP
@@ -104,7 +112,6 @@ setup_machine_id() {
   
   if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
     log "ERROR: Failed to generate a valid 32-character machine-id"
-    log "ERROR: Got: '${machine_id}' (length: ${#machine_id})"
     exit 1
   fi
   
@@ -137,7 +144,6 @@ setup_machine_id() {
     log "Machine-ID written to ${MACHINE_ID_FILE_ETC}"
   else
     log "WARNING: Could not persist machine-id to writable storage"
-    log "WARNING: Authentication may not persist across container restarts"
   fi
   
   export HYTALE_RUNTIME_MACHINE_ID="${machine_id}"
@@ -158,15 +164,13 @@ if [ -f "${HYTALE_SERVER_TOKENS_FILE}" ]; then
     export HYTALE_SERVER_IDENTITY_TOKEN
   fi
   if [ -n "${HYTALE_SERVER_SESSION_TOKEN}" ] && [ -n "${HYTALE_SERVER_IDENTITY_TOKEN}" ]; then
-    log "Auto-loaded server authentication tokens from ${HYTALE_SERVER_TOKENS_FILE}"
+    log "Auto-loaded server authentication tokens"
   fi
 fi
 
 check_data_writable() {
   if [ ! -w "${DATA_DIR}" ]; then
     log "ERROR: Cannot write to ${DATA_DIR}"
-    log "ERROR: The /data volume must be writable by UID $(id -u)."
-    log "ERROR: Fix: 'sudo chown -R $(id -u):$(id -g) <host-path>'"
     log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
@@ -176,10 +180,7 @@ check_dir_writable() {
   dir="$1"
   if [ ! -w "${dir}" ]; then
     log "ERROR: Cannot write to ${dir}"
-    log "ERROR: Directory exists but is not writable by UID $(id -u)."
     log "ERROR: Current owner: $(ls -ld "${dir}" 2>/dev/null | awk '{print $3":"$4}')"
-    log "ERROR: Fix: 'sudo chown -R $(id -u):$(id -g) <host-path>'"
-    log "ERROR: Or delete the directory and let the container recreate it."
     log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
@@ -227,15 +228,14 @@ HYTALE_AUTO_DOWNLOAD="${HYTALE_AUTO_DOWNLOAD:-false}"
 HYTALE_AUTO_UPDATE="${HYTALE_AUTO_UPDATE:-true}"
 
 HYTALE_CONSOLE_PIPE="${HYTALE_CONSOLE_PIPE:-true}"
-
 HYTALE_JAVA_TERMINAL_PROPS="${HYTALE_JAVA_TERMINAL_PROPS:-true}"
-
 HYTALE_CURSEFORGE_MODS="${HYTALE_CURSEFORGE_MODS:-}"
-
 HYTALE_UNIVERSE_DOWNLOAD_URLS="${HYTALE_UNIVERSE_DOWNLOAD_URLS:-}"
 HYTALE_MODS_DOWNLOAD_URLS="${HYTALE_MODS_DOWNLOAD_URLS:-}"
 
+# AOT settings - default to auto which will auto-generate if missing
 ENABLE_AOT="${ENABLE_AOT:-auto}"
+HYTALE_AOT_AUTO_GENERATE="${HYTALE_AOT_AUTO_GENERATE:-true}"
 
 user_args="$*"
 
@@ -243,13 +243,11 @@ mkdir -p "${SERVER_DIR}"
 check_dir_writable "${SERVER_DIR}"
 
 log "Thank you for using the Hytale Server Docker Image by Hybrowse!"
-log "- Add your server to our server list: https://hybrowse.gg"
 log "- GitHub: https://github.com/scotthowson/hytale-server-pelican"
-log "- Console: 'docker compose attach hytale' (detach: Ctrl-p then Ctrl-q)"
 log ""
 
 if is_true "${HYTALE_AUTO_DOWNLOAD}"; then
-  log "Auto-download: enabled (first run may require opening an auth URL from the logs)"
+  log "Auto-download: enabled"
 fi
 
 missing=0
@@ -298,11 +296,7 @@ if [ "${missing}" -ne 0 ]; then
   log "  ${DATA_DIR}/Assets.zip"
   log "  ${SERVER_DIR}/HytaleServer.jar"
   log ""
-  log "How to fix:"
-  log "- Place the official server files into ${SERVER_DIR}/"
-  log "- Place Assets.zip into ${DATA_DIR}/Assets.zip"
-  log "- Or set HYTALE_AUTO_DOWNLOAD=true"
-  log "- On Apple Silicon (arm64): auto-download requires running the container as linux/amd64 (Docker Compose: platform: linux/amd64)"
+  log "- Set HYTALE_AUTO_DOWNLOAD=true for automatic download"
   log "- See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/server-files.md"
   exit 1
 fi
@@ -319,7 +313,6 @@ fi
 export DATA_DIR SERVER_DIR
 
 /usr/local/bin/hytale-prestart-downloads || true
-
 /usr/local/bin/hytale-cfg-interpolate || true
 
 log "Starting Hytale dedicated server"
@@ -352,10 +345,6 @@ if [ -n "${JVM_XMX:-}" ]; then
   log "- JVM_XMX: ${JVM_XMX}"
 fi
 
-if [ -n "${TZ:-}" ]; then
-  log "- TZ: ${TZ}"
-fi
-
 if [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ]; then
   log "- Session token: [set]"
 fi
@@ -363,6 +352,132 @@ fi
 if [ -n "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ]; then
   log "- Identity token: [set]"
 fi
+
+# ============================================================================
+# AOT CACHE HANDLING WITH AUTO-GENERATION
+# ============================================================================
+# The AOT cache significantly improves startup time but is tied to the JVM version.
+# When the JVM updates, the cache becomes invalid and must be regenerated.
+# With auto-generation enabled (default), we automatically generate the cache
+# on first run or when it becomes stale.
+# ============================================================================
+
+validate_aot_cache() {
+  aot_file="$1"
+  if [ ! -f "${aot_file}" ]; then
+    return 1
+  fi
+  
+  # Test the cache by running java -version with it
+  test_result="$(java -XX:AOTCache="${aot_file}" -XX:AOTMode=auto -Xlog:aot=error -version 2>&1)"
+  
+  # Check for AOT errors indicating cache incompatibility
+  if printf '%s' "${test_result}" | grep -q "Unable to map shared spaces"; then
+    return 1
+  fi
+  if printf '%s' "${test_result}" | grep -q "not the one used while building"; then
+    return 1
+  fi
+  if printf '%s' "${test_result}" | grep -q "An error has occurred while processing the AOT cache"; then
+    return 1
+  fi
+  
+  return 0
+}
+
+generate_aot_cache() {
+  log "- AOT: generating cache (this may take a minute)..."
+  
+  # Build the AOT generation command
+  aot_cmd="java --enable-native-access=ALL-UNNAMED"
+  
+  if [ -n "${JVM_XMS:-}" ]; then
+    aot_cmd="${aot_cmd} -Xms${JVM_XMS}"
+  fi
+  if [ -n "${JVM_XMX:-}" ]; then
+    aot_cmd="${aot_cmd} -Xmx${JVM_XMX}"
+  fi
+  
+  aot_cmd="${aot_cmd} -XX:AOTCacheOutput=${HYTALE_AOT_PATH}"
+  aot_cmd="${aot_cmd} -jar ${HYTALE_SERVER_JAR}"
+  aot_cmd="${aot_cmd} --assets ${HYTALE_ASSETS_PATH}"
+  aot_cmd="${aot_cmd} --bare --validate-assets --shutdown-after-validate"
+  
+  # Run AOT generation
+  cd "${SERVER_DIR}"
+  if eval "${aot_cmd}" >/dev/null 2>&1; then
+    if [ -f "${HYTALE_AOT_PATH}" ]; then
+      log "- AOT: cache generated successfully"
+      return 0
+    fi
+  fi
+  
+  log "- AOT: cache generation failed (server will start without AOT)"
+  return 1
+}
+
+aot_enabled=0
+
+case "$(lower "${ENABLE_AOT}")" in
+  generate|create)
+    # Explicit generation mode - just generate, don't start server
+    log "- AOT: generating cache (explicit mode)"
+    generate_aot_cache
+    exit 0
+    ;;
+  auto|"")
+    if [ -f "${HYTALE_AOT_PATH}" ]; then
+      if validate_aot_cache "${HYTALE_AOT_PATH}"; then
+        log "- AOT: enabled (cache valid)"
+        aot_enabled=1
+      else
+        log "- AOT: cache incompatible with current JVM, removing"
+        rm -f "${HYTALE_AOT_PATH}" 2>/dev/null || true
+        
+        # Auto-generate if enabled
+        if is_true "${HYTALE_AOT_AUTO_GENERATE}"; then
+          if generate_aot_cache; then
+            aot_enabled=1
+          fi
+        else
+          log "- AOT: disabled (set HYTALE_AOT_AUTO_GENERATE=true to auto-generate)"
+        fi
+      fi
+    else
+      # No cache exists - auto-generate if enabled
+      if is_true "${HYTALE_AOT_AUTO_GENERATE}"; then
+        if generate_aot_cache; then
+          aot_enabled=1
+        fi
+      else
+        log "- AOT: disabled (cache missing, set HYTALE_AOT_AUTO_GENERATE=true to auto-generate)"
+      fi
+    fi
+    ;;
+  true|1|yes|on)
+    if [ -f "${HYTALE_AOT_PATH}" ]; then
+      if validate_aot_cache "${HYTALE_AOT_PATH}"; then
+        log "- AOT: enabled"
+        aot_enabled=1
+      else
+        log "ERROR: ENABLE_AOT=true but AOT cache is incompatible"
+        log "ERROR: Set ENABLE_AOT=auto to auto-handle, or ENABLE_AOT=generate to regenerate"
+        exit 1
+      fi
+    else
+      log "ERROR: ENABLE_AOT=true but AOT cache does not exist"
+      log "ERROR: Set ENABLE_AOT=auto to auto-generate"
+      exit 1
+    fi
+    ;;
+  false|0|no|off)
+    log "- AOT: disabled"
+    ;;
+  *)
+    log "ERROR: Invalid ENABLE_AOT value: ${ENABLE_AOT}"
+    exit 1
+    ;;
+esac
 
 # Build Java arguments
 set -- java
@@ -395,69 +510,10 @@ if [ -n "${HYTALE_HARDWARE_UUID:-}" ]; then
   set -- "$@" "-Dcom.sun.management.jmxremote.machine.id=${HYTALE_HARDWARE_UUID}"
 fi
 
-aot_generate=0
-
-# AOT cache validation
-validate_aot_cache() {
-  aot_file="$1"
-  if [ ! -f "${aot_file}" ]; then
-    return 1
-  fi
-  # Validate by running java -version with the cache
-  if java -XX:AOTCache="${aot_file}" -XX:AOTMode=auto -version >/dev/null 2>&1; then
-    return 0
-  else
-    return 1
-  fi
-}
-
-case "$(lower "${ENABLE_AOT}")" in
-  generate|create)
-    set -- "$@" "-XX:AOTCacheOutput=${HYTALE_AOT_PATH}"
-    log "- AOT: generating cache"
-    aot_generate=1
-    ;;
-  auto|"")
-    if [ -f "${HYTALE_AOT_PATH}" ]; then
-      if validate_aot_cache "${HYTALE_AOT_PATH}"; then
-        set -- "$@" "-XX:AOTCache=${HYTALE_AOT_PATH}" "-XX:AOTMode=auto"
-        log "- AOT: enabled (auto)"
-      else
-        log "- AOT: cache incompatible with current JVM, removing stale cache"
-        rm -f "${HYTALE_AOT_PATH}" 2>/dev/null || true
-        log "- AOT: disabled (cache removed, regenerate with ENABLE_AOT=generate)"
-      fi
-    else
-      log "- AOT: disabled (auto, cache missing)"
-    fi
-    ;;
-  true|1|yes|on)
-    if [ -f "${HYTALE_AOT_PATH}" ]; then
-      if validate_aot_cache "${HYTALE_AOT_PATH}"; then
-        set -- "$@" "-XX:AOTCache=${HYTALE_AOT_PATH}" "-XX:AOTMode=on"
-        log "- AOT: enabled"
-      else
-        log "ERROR: ENABLE_AOT=true but AOT cache is incompatible with current JVM"
-        log "ERROR: Remove ${HYTALE_AOT_PATH} and regenerate with ENABLE_AOT=generate"
-        log "ERROR: Or set ENABLE_AOT=auto to automatically handle stale caches"
-        exit 1
-      fi
-    else
-      log "ERROR: ENABLE_AOT=true but AOT cache file does not exist: ${HYTALE_AOT_PATH}"
-      log "ERROR: Generate an AOT cache (ENABLE_AOT=generate) or disable AOT (ENABLE_AOT=false)."
-      log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md"
-      exit 1
-    fi
-    ;;
-  false|0|no|off)
-    log "- AOT: disabled"
-    ;;
-  *)
-    log "ERROR: Invalid ENABLE_AOT value: ${ENABLE_AOT} (expected: auto|true|false|generate)"
-    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/configuration.md"
-    exit 1
-    ;;
-esac
+# Add AOT cache if enabled
+if [ "${aot_enabled}" -eq 1 ] && [ -f "${HYTALE_AOT_PATH}" ]; then
+  set -- "$@" "-XX:AOTCache=${HYTALE_AOT_PATH}" "-XX:AOTMode=auto"
+fi
 
 if is_true "${HYTALE_JAVA_TERMINAL_PROPS}"; then
   terminal_jline="${JVM_TERMINAL_JLINE:-false}"
@@ -597,10 +653,6 @@ fi
 
 if [ -n "${HYTALE_WORLD_GEN_PATH:-}" ]; then
   set -- "$@" --world-gen "${HYTALE_WORLD_GEN_PATH}"
-fi
-
-if [ "${aot_generate}" -eq 1 ]; then
-  set -- "$@" --bare --validate-assets --shutdown-after-validate
 fi
 
 if [ -n "${EXTRA_SERVER_ARGS:-}" ]; then
