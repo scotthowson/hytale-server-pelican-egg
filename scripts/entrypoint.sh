@@ -7,6 +7,26 @@ set -eu
 unset JAVA_TOOL_OPTIONS 2>/dev/null || true
 export JAVA_TOOL_OPTIONS=""
 
+# ============================================================================
+# TEMP DIRECTORY SETUP (MUST BE EARLY - BEFORE ANY JAVA)
+# ============================================================================
+# Java creates zipfstmp*.tmp files in java.io.tmpdir. We MUST set this before
+# any Java process runs, including AOT generation.
+# ============================================================================
+DATA_DIR="${DATA_DIR:-/home/container}"
+HYTALE_TMP_DIR="${DATA_DIR}/tmp"
+mkdir -p "${HYTALE_TMP_DIR}" 2>/dev/null || true
+chmod 1777 "${HYTALE_TMP_DIR}" 2>/dev/null || true
+
+# Export for all child processes
+export TMPDIR="${HYTALE_TMP_DIR}"
+export TMP="${HYTALE_TMP_DIR}"
+export TEMP="${HYTALE_TMP_DIR}"
+
+# Critical: Set _JAVA_OPTIONS to force ALL Java processes to use our tmp dir
+# This affects java commands even before we can pass -D flags
+export _JAVA_OPTIONS="-Djava.io.tmpdir=${HYTALE_TMP_DIR}"
+
 lower() {
   printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]'
 }
@@ -24,14 +44,6 @@ log() {
 
 DATA_DIR="${DATA_DIR:-/home/container}"
 SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
-
-# ============================================================================
-# TEMP DIRECTORY SETUP
-# ============================================================================
-HYTALE_TMP_DIR="${DATA_DIR}/tmp"
-mkdir -p "${HYTALE_TMP_DIR}" 2>/dev/null || true
-chmod 1777 "${HYTALE_TMP_DIR}" 2>/dev/null || true
-export TMPDIR="${HYTALE_TMP_DIR}"
 
 # ============================================================================
 # PELICAN PANEL VARIABLE MAPPING

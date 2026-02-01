@@ -81,14 +81,14 @@
             "name": "Max Players",
             "description": "Maximum number of players allowed on the server",
             "env_variable": "HYTALE_MAX_PLAYERS",
-            "default_value": "16",
+            "default_value": "24",
             "user_viewable": true,
             "user_editable": true,
             "rules": [
                 "required",
                 "integer",
                 "min:1",
-                "max:500"
+                "max:100"
             ],
             "sort": 3
         },
@@ -110,7 +110,7 @@
             "name": "View Distance",
             "description": "Maximum view radius in chunks. Higher = more RAM needed.",
             "env_variable": "HYTALE_MAX_VIEW_RADIUS",
-            "default_value": "32",
+            "default_value": "12",
             "user_viewable": true,
             "user_editable": true,
             "rules": [
