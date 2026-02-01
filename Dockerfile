@@ -1,9 +1,8 @@
-FROM container-registry.oracle.com/graalvm/native-image:25
+FROM container-registry.oracle.com/graalvm/jdk:25
 
 # ============================================================================
-# INSTALL DEPENDENCIES (Oracle Linux uses microdnf, not apt)
+# INSTALL DEPENDENCIES (Oracle Linux uses microdnf)
 # ============================================================================
-# Note: We intentionally do NOT install real dmidecode - our fake one handles UUID
 ARG TARGETARCH
 RUN microdnf install -y \
       ca-certificates \
@@ -12,6 +11,7 @@ RUN microdnf install -y \
       jq \
       util-linux \
       shadow-utils \
+      procps-ng \
   && microdnf clean all \
   && case "$TARGETARCH" in \
        amd64)  TINI_ARCH=amd64 ;; \
@@ -22,11 +22,9 @@ RUN microdnf install -y \
        -o /usr/bin/tini \
   && chmod +x /usr/bin/tini
 
-
 # ============================================================================
 # USER / GROUP SETUP
 # ============================================================================
-# Create hytale user/group with consistent UID/GID
 RUN groupadd -f -g 1000 hytale || true \
   && if ! id -u 1000 >/dev/null 2>&1; then \
        useradd -m -u 1000 -g 1000 -s /usr/sbin/nologin hytale; \
@@ -35,12 +33,6 @@ RUN groupadd -f -g 1000 hytale || true \
 # ============================================================================
 # MACHINE-ID INFRASTRUCTURE
 # ============================================================================
-# The Hytale server needs a consistent hardware UUID for authentication.
-# We set up multiple fallback mechanisms:
-#   1. Writable /etc/machine-id
-#   2. Writable /var/lib/dbus/machine-id
-# ============================================================================
-
 RUN rm -f /etc/machine-id /var/lib/dbus/machine-id 2>/dev/null || true \
   && mkdir -p /var/lib/dbus \
   && touch /etc/machine-id /var/lib/dbus/machine-id \
@@ -55,11 +47,7 @@ WORKDIR /home/container
 # ============================================================================
 # SCRIPT INSTALLATION
 # ============================================================================
-# Install fake dmidecode FIRST so it appears before any real dmidecode in PATH.
-# ============================================================================
-
 COPY scripts/fake-dmidecode.sh /usr/local/bin/dmidecode
-
 COPY scripts/entrypoint.sh /usr/local/bin/hytale-entrypoint
 COPY scripts/cfg-interpolate.sh /usr/local/bin/hytale-cfg-interpolate
 COPY scripts/auto-download.sh /usr/local/bin/hytale-auto-download
@@ -73,7 +61,6 @@ COPY scripts/check-machine-id.sh /usr/local/bin/check-machine-id
 COPY scripts/debug-hardware-uuid.sh /usr/local/bin/debug-hardware-uuid
 COPY scripts/diagnose-auth.sh /usr/local/bin/diagnose-auth
 
-# Make all scripts executable
 RUN chmod 0755 /usr/local/bin/*
 
 # Verify fake dmidecode is first in PATH

@@ -391,10 +391,6 @@ generate_aot_cache() {
   # Create a temporary file for AOT generation output
   aot_log="${DATA_DIR}/.aot-generation.log"
   
-  # AOT generation requires running the server in a special mode
-  # The server runs with --bare --validate-assets --shutdown-after-validate
-  # and -XX:AOTCacheOutput to create the cache file
-  
   cd "${SERVER_DIR}"
   
   # Build command as an array for proper argument handling
@@ -419,18 +415,28 @@ generate_aot_cache() {
   set -- "$@" --shutdown-after-validate
   
   # Run AOT generation with output captured
-  log "- AOT: running server in AOT generation mode..."
-  if "$@" > "${aot_log}" 2>&1; then
+  log "- AOT: running server in training mode..."
+  "$@" > "${aot_log}" 2>&1
+  gen_exit_code=$?
+  
+  # Check if AOT cache was created (check the log for success message)
+  if grep -q "AOTCache creation is complete" "${aot_log}" 2>/dev/null; then
     if [ -f "${HYTALE_AOT_PATH}" ]; then
       aot_size="$(wc -c < "${HYTALE_AOT_PATH}" 2>/dev/null | tr -d ' ')"
       log "- AOT: cache generated successfully (${aot_size} bytes)"
       rm -f "${aot_log}" 2>/dev/null || true
       return 0
-    else
-      log "- AOT: generation completed but cache file not found"
     fi
-  else
-    log "- AOT: generation process exited with error"
+  fi
+  
+  # Also check if file exists and is reasonably sized (>1MB)
+  if [ -f "${HYTALE_AOT_PATH}" ]; then
+    aot_size="$(wc -c < "${HYTALE_AOT_PATH}" 2>/dev/null | tr -d ' ')"
+    if [ "${aot_size:-0}" -gt 1000000 ]; then
+      log "- AOT: cache generated successfully (${aot_size} bytes)"
+      rm -f "${aot_log}" 2>/dev/null || true
+      return 0
+    fi
   fi
   
   # Show the last few lines of the log on failure
