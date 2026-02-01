@@ -73,6 +73,9 @@ RUN chown -R 1000:1000 /home/container 2>/dev/null || true
 # ============================================================================
 # RUNTIME
 # ============================================================================
+# Clear JAVA_TOOL_OPTIONS that GraalVM sets - it causes AOT cache mismatches
+ENV JAVA_TOOL_OPTIONS=""
+
 USER 1000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=3 \
