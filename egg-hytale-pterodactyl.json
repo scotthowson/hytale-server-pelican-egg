@@ -1,0 +1,323 @@
+{
+    "_comment": "DO NOT EDIT: FILE ACTIVE GENERATED VIA PELICAN PANEL - https://pelican.dev",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-02-03T00:00:00+00:00",
+    "name": "Hytale Server (Hybrowse)",
+    "author": "scott@howson.dev",
+    "description": "Production-ready Hytale dedicated server powered by Hybrowse.\r\n\r\nFeatures:\r\n• Automatic server file downloads & updates\r\n• AOT compilation for fast startup (auto-generated)\r\n• Built-in CurseForge mod management\r\n• Automatic backups with retention\r\n• Persistent authentication\r\n• Security-first design\r\n\r\nQUICK START:\r\n1. Start the server - watch console for device code URL\r\n2. Visit URL and enter code to authenticate downloader\r\n3. Once booted, run: /auth login device\r\n4. Follow the URL + code shown\r\n5. Players can now connect!\r\n\r\nDocs: https://github.com/scotthowson/hytale-server-pelican",
+    "features": null,
+    "docker_images": {
+        "Latest": "ghcr.io/scotthowson/hytale-server-pelican:latest",
+        "Test": "ghcr.io/scotthowson/hytale-server-pelican:test"
+    },
+    "file_denylist": [],
+    "startup": "/usr/bin/tini -- /usr/local/bin/hytale-entrypoint",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"Hytale Server Booted!\"\r\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\r\nset -e\r\n\r\ncd /mnt/server\r\n\r\necho \"\"\r\necho \"========================================\"\r\necho \"  Hybrowse Hytale Server Installation\"\r\necho \"========================================\"\r\necho \"\"\r\n\r\nchown -R 1000:1000 /mnt/server 2>/dev/null || true\r\nchmod -R 755 /mnt/server\r\n\r\necho \"Directory prepared for Hytale server.\"\r\necho \"\"\r\necho \"The Docker image handles:\"\r\necho \"  - Automatic server downloads\"\r\necho \"  - AOT cache generation\"\r\necho \"  - CurseForge mods (optional)\"\r\necho \"  - Automatic backups (optional)\"\r\necho \"\"\r\necho \"========================================\"\r\necho \"  AUTHENTICATION (First Start)\"\r\necho \"========================================\"\r\necho \"\"\r\necho \"1. Start server - watch for device code URL\"\r\necho \"2. Visit URL, enter code to download files\"\r\necho \"3. After boot, run: /auth login device\"\r\necho \"4. Follow URL + code to authenticate\"\r\necho \"5. Done! Players can connect.\"\r\necho \"\"\r\necho \"========================================\"\r\necho \"\"",
+            "container": "ghcr.io/pterodactyl/installers:debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Server Name",
+            "description": "Display name for your Hytale server (shown in server list). Maps to config.json ServerName.",
+            "env_variable": "HYTALE_SERVER_NAME",
+            "default_value": "Hytale Server",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:100",
+            "field_type": "text"
+        },
+        {
+            "name": "MOTD",
+            "description": "Message of the Day shown to players when they join. Maps to config.json MOTD.",
+            "env_variable": "HYTALE_MOTD",
+            "default_value": "Welcome to our server!",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:255",
+            "field_type": "text"
+        },
+        {
+            "name": "Max Players",
+            "description": "Maximum number of players allowed on the server. Maps to config.json MaxPlayers.",
+            "env_variable": "HYTALE_MAX_PLAYERS",
+            "default_value": "24",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:1|max:500",
+            "field_type": "text"
+        },
+        {
+            "name": "Default World",
+            "description": "Name of the default world players spawn into. Maps to config.json Defaults.World.",
+            "env_variable": "HYTALE_DEFAULT_WORLD",
+            "default_value": "Default",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:50",
+            "field_type": "text"
+        },
+        {
+            "name": "View Distance",
+            "description": "Maximum view radius in chunks. Higher = more RAM needed. Maps to config.json MaxViewRadius.",
+            "env_variable": "HYTALE_MAX_VIEW_RADIUS",
+            "default_value": "12",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:8|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Server Port",
+            "description": "UDP port for Hytale (QUIC protocol). Must match your allocation. Used to set HYTALE_BIND.",
+            "env_variable": "HYTALE_PORT",
+            "default_value": "5520",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "required|integer|between:1024,65535",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Download",
+            "description": "Automatically download Hytale server files using the official downloader. First run requires device code authentication.",
+            "env_variable": "HYTALE_AUTO_DOWNLOAD",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Update",
+            "description": "Check for and download server updates on startup. Only applies when HYTALE_AUTO_DOWNLOAD is enabled.",
+            "env_variable": "HYTALE_AUTO_UPDATE",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "JVM Memory (MB)",
+            "description": "Maximum JVM heap size in megabytes. Examples: 4096 (4GB), 8192 (8GB), 16384 (16GB). Maps to -Xmx.",
+            "env_variable": "HYTALE_JVM_XMX",
+            "default_value": "4096",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:1024|max:65536",
+            "field_type": "text"
+        },
+        {
+            "name": "JVM Min Memory (MB)",
+            "description": "Minimum JVM heap size in megabytes. Set to 0 to not specify. Recommended: same as max for dedicated servers. Maps to -Xms.",
+            "env_variable": "HYTALE_JVM_XMS",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:0|max:65536",
+            "field_type": "text"
+        },
+        {
+            "name": "AOT Cache",
+            "description": "Ahead-Of-Time compilation for faster startup. auto = generate if missing, true = require existing cache, false = disable AOT.",
+            "env_variable": "HYTALE_USE_AOT",
+            "default_value": "auto",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:auto,true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Authentication Mode",
+            "description": "Server authentication mode. authenticated = requires Hytale login, offline = no auth required, insecure = testing only.",
+            "env_variable": "HYTALE_AUTH_MODE",
+            "default_value": "authenticated",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:authenticated,offline,insecure",
+            "field_type": "text"
+        },
+        {
+            "name": "Enable Backups",
+            "description": "Enable automatic world backups. Uses --backup flag.",
+            "env_variable": "HYTALE_ENABLE_BACKUP",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Backup Frequency (min)",
+            "description": "Minutes between backups. Only applies if backups enabled. Uses --backup-frequency flag.",
+            "env_variable": "HYTALE_BACKUP_FREQUENCY_MINUTES",
+            "default_value": "60",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:5|max:1440",
+            "field_type": "text"
+        },
+        {
+            "name": "Backup Retention",
+            "description": "Number of backups to keep. Oldest deleted automatically. Uses --backup-max-count flag.",
+            "env_variable": "HYTALE_BACKUP_RETENTION_COUNT",
+            "default_value": "5",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:1|max:100",
+            "field_type": "text"
+        },
+        {
+            "name": "CurseForge Mods",
+            "description": "Space or newline separated CurseForge mod IDs. Supports inline comments with #. Example: 123456 234567 # My mods",
+            "env_variable": "HYTALE_CURSEFORGE_MODS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "CurseForge API Key",
+            "description": "API key from console.curseforge.com. Required for mod downloads. Note: $ characters must be escaped as $$ in Pterodactyl.",
+            "env_variable": "HYTALE_CURSEFORGE_API_KEY",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "CurseForge Release Channel",
+            "description": "Which mod releases to allow. release = stable only, beta = stable+beta, alpha = all versions.",
+            "env_variable": "HYTALE_CURSEFORGE_RELEASE_CHANNEL",
+            "default_value": "release",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:release,beta,alpha",
+            "field_type": "text"
+        },
+        {
+            "name": "CurseForge Auto Update",
+            "description": "Automatically update mods to latest version on server start.",
+            "env_variable": "HYTALE_CURSEFORGE_AUTO_UPDATE",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Allow Self-Op",
+            "description": "Allow /op command for self-promotion. WARNING: Grants admin access to anyone who uses the command!",
+            "env_variable": "HYTALE_ALLOW_SELF_OP",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Owner Name",
+            "description": "Hytale username to automatically grant owner privileges on first join.",
+            "env_variable": "HYTALE_OWNER_NAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:50",
+            "field_type": "text"
+        },
+        {
+            "name": "Owner UUID",
+            "description": "Hytale UUID to automatically grant owner privileges. Alternative to Owner Name.",
+            "env_variable": "HYTALE_OWNER_UUID",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Machine ID",
+            "description": "32-char hex string for auth persistence. Auto-generated if empty. Only set when migrating servers to preserve authentication.",
+            "env_variable": "HYTALE_MACHINE_ID",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": "nullable|regex:/^[0-9a-f]{32}$/",
+            "field_type": "text"
+        },
+        {
+            "name": "JVM Extra Args",
+            "description": "Additional JVM arguments for advanced tuning. Added after default JVM flags.",
+            "env_variable": "HYTALE_JVM_ARGS",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Disable Sentry",
+            "description": "Disable error reporting to Hytale. Uses --disable-sentry flag.",
+            "env_variable": "HYTALE_DISABLE_SENTRY",
+            "default_value": "false",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": "required|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Accept Early Plugins",
+            "description": "Allow early-stage/experimental plugins to load. Uses --accept-early-plugins flag.",
+            "env_variable": "HYTALE_ACCEPT_EARLY_PLUGINS",
+            "default_value": "false",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": "required|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Boot Command",
+            "description": "Command to execute automatically after server boots. Uses --boot-command flag.",
+            "env_variable": "HYTALE_BOOT_COMMAND",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Extra Server Args",
+            "description": "Additional command-line arguments to pass directly to HytaleServer.jar.",
+            "env_variable": "EXTRA_SERVER_ARGS",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Timezone",
+            "description": "Server timezone for logging. Examples: America/New_York, Europe/London, UTC.",
+            "env_variable": "TZ",
+            "default_value": "UTC",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        }
+    ]
+}
